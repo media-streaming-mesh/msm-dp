@@ -1,0 +1,59 @@
+/*
+ * Copyright (c) 2022 Cisco and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package msm_dp;
+
+option go_package = "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp;msm_dp";
+
+enum StreamOperation {
+	CREATE = 0;
+	UPDATE = 1;
+	DELETE = 2;
+	ADD_EP = 3;
+	DEL_EP = 4;
+}
+
+enum RtpEncap {
+	UDP = 0;
+	UDP_MUXED = 1;
+	TCP = 2;
+	TCP_MUXED = 3;
+	QUIC_STREAM = 4;
+	QUIC_DGRAM = 5;
+}
+
+message RtpEndpoint {
+	RtpEncap encap = 1;
+	string source = 2;
+	string dest = 3;
+}
+
+message StreamData {
+	StreamOperation stream_operation = 1;
+	uint32 stream_id = 2;
+	RtpEndpoint stream_endpoint = 3;
+}
+
+message StreamResult {
+	bool success = 1;
+	string error_message = 2;
+}
+
+service MsmDataPlane {
+	rpc stream_add_del (StreamData) returns (StreamResult) {}
+}
