@@ -43,8 +43,8 @@ enum Encap {
 	RTP_UDP_MUX = 4;
 	RTP_TCP = 5;
 	RTP_TCP_MUX = 6;
-	QUIC_STREAM = 7;
-	QUIC_DGRAM = 8;
+	RTP_QUIC_STREAM = 7;
+	RTP_QUIC_DGRAM = 8;
 }
 
 message Endpoint {
