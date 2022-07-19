@@ -26,27 +26,43 @@ enum StreamOperation {
 	DELETE = 2;
 	ADD_EP = 3;
 	DEL_EP = 4;
+	UPD_EP = 5;
 }
 
-enum RtpEncap {
-	UDP = 0;
-	UDP_MUXED = 1;
-	TCP = 2;
-	TCP_MUXED = 3;
-	QUIC_STREAM = 4;
-	QUIC_DGRAM = 5;
+enum ProxyProtocol { 
+	TCP = 0;
+	UDP = 1;
+	QUIC = 2;
+	RTP = 3;
 }
 
-message RtpEndpoint {
-	RtpEncap encap = 1;
-	string source = 2;
-	string dest = 3;
+enum Encap {
+	TCP_IP = 0;
+	UDP_IP = 1;
+	QUIC_IP = 2;
+	RTP_UDP = 3;
+	RTP_UDP_MUX = 4;
+	RTP_TCP = 5;
+	RTP_TCP_MUX = 6;
+	RTP_QUIC_STREAM = 7;
+	RTP_QUIC_DGRAM = 8;
+}
+
+message Endpoint {
+	string source_ip = 1;
+	string dest_ip = 2;
+	uint32 source_port = 3;
+	uint32 dest_port = 4;
+	uint64 quic_stream = 5;
+	Encap encap = 6;
 }
 
 message StreamData {
-	StreamOperation stream_operation = 1;
-	uint32 stream_id = 2;
-	RtpEndpoint stream_endpoint = 3;
+	uint32 id = 1;
+	StreamOperation operation = 2;
+	ProxyProtocol protocol = 3;
+	Endpoint endpoint = 4;
+	bool enable = 5;
 }
 
 message StreamResult {
