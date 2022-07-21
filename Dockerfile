@@ -23,7 +23,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o msm-prox
 #FROM gcr.io/distroless/static:nonroot
 FROM ubuntu
 WORKDIR /
-COPY --from=builder /workspace/msm-proxy
+COPY --from=builder /workspace/msm-proxy .
 #USER nonroot:nonroot
 
-ENTRYPOINT ["/msm-proxy", "-loglevel", "5"]
+ENTRYPOINT ["/msm-proxy", "--level", "DEBUG", "-loglevel", "5"]
