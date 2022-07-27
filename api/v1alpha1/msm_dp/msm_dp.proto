@@ -49,11 +49,10 @@ enum Encap {
 }
 
 message Endpoint {
-	string endpoint_ip = 1;
-	uint32 endpoint_port = 2;
-	uint32 proxy_port = 3;
-	uint32 quic_stream = 4;
-	Encap encap = 5;
+	string ip = 1;
+	uint32 port = 2;
+	uint32 quic_stream = 3;
+	uint32 encap = 4;
 }
 
 message StreamData {
