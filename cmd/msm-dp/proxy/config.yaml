@@ -1,0 +1,5 @@
+streams:
+  # name of the stream
+  mypath:
+    # url of the source stream, in the format rtsp://user:pass@host:port/path
+    url: rtsp://127.0.0.1:8554/mystream
