@@ -33,9 +33,9 @@ func main() {
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	_, err = c.StreamAddDel(ctx, &pb.StreamData{Id: 4})
+	sr, err := c.StreamAddDel(ctx, &pb.StreamData{})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
-	log.Printf("Greeting: we got a hit from server")
+	log.Printf("Greeting: we got a hit from server %v", sr)
 }

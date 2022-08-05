@@ -21,8 +21,16 @@ type server struct {
 }
 
 func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
-	log.Printf("Received: message from client")
-	return &pb.StreamResult{}, nil
+	log.Printf("Received: message from client Endpoint = %v", in.Endpoint)
+	log.Printf("Received: message from client Enable = %v", in.Enable)
+	log.Printf("Received: message from client Protocol = %v", in.Protocol)
+	log.Printf("Received: message from client Id = %v", in.Id)
+	log.Printf("Received: message from client Operation = %v", in.Operation)
+	log.Printf("Received: message from client Context = %v", ctx)
+
+	return &pb.StreamResult{
+		Success: true,
+	}, nil
 }
 
 func main() {
