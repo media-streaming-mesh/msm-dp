@@ -4,17 +4,21 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"reflect"
-
-	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
-	"google.golang.org/grpc"
 )
 
 var (
 	port = flag.Int("port", 9000, "The server port")
 )
+
+var serverIP string
+var clientIP string
+var serverPort int32
+var clientPort int32
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -52,22 +56,28 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 		if protocol.Int() == 0 {
 			if i == 3 {
 				log.Println("Client IP: ", f)
+				clientIP = f.String()
 			}
 			if i == 4 {
 				log.Println("Client Port: ", f)
+				//clientPort = f.String()
+
 			}
 
 		}
 		if protocol.Int() == 3 {
 			if i == 3 {
 				log.Println("Server IP: ", f)
+				serverIP = f.String()
 			}
 			if i == 4 {
 				log.Println("Server Port: ", f)
+				//serverPort = f.String()
+
 			}
 		}
 
-		//TODO: handle protocol 1: UDP and 2: QUIC
+		//TODO: handle other protocols, 1: UDP and 2: QUIC
 		if protocol.Int() == 1 {
 
 		}
@@ -75,6 +85,7 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 		}
 	}
+	//log.Printf("ServerIP: %v, ServerPort: %v, ClientIP: %v, ClientPort: %v", serverIP, serverPort, clientIP, clientPort)
 
 	return &pb.StreamResult{
 		Success: true,
