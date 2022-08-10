@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -85,8 +86,7 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 		}
 	}
-	//log.Printf("ServerIP: %v, ServerPort: %v, ClientIP: %v, ClientPort: %v", serverIP, serverPort, clientIP, clientPort)
-
+	ListenServer()
 	return &pb.StreamResult{
 		Success: true,
 	}, nil
@@ -104,4 +104,52 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+
+}
+
+func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
+	_, err := conn.WriteToUDP([]byte("From server: Hello I got your message "), addr)
+	if err != nil {
+		log.Printf("Couldn't send response %v", err)
+	}
+}
+
+func ListenServer() {
+	log.Printf("ListenServer()")
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8050,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	ser, err := net.ListenUDP("udp", &addr)
+	if err != nil {
+		log.Printf("Some error ListenUDP %v\n", err)
+		return
+	}
+	for {
+		_, remoteAddr, err := ser.ReadFromUDP(p)
+		log.Printf("Read a message from %v %s \n", remoteAddr, p)
+		if err != nil {
+			log.Printf("Some error ReadFromUDP %v", err)
+			continue
+		}
+		go sendResponse(ser, remoteAddr)
+	}
+}
+
+func DialClient() {
+	p := make([]byte, 2048)
+	conn, err := net.Dial("udp", serverIP+":8000")
+	if err != nil {
+		log.Printf("Some error %v", err)
+		return
+	}
+	fmt.Fprintf(conn, "Hi UDP Server, How are you doing?")
+	_, err = bufio.NewReader(conn).Read(p)
+	if err == nil {
+		log.Printf("%s\n", p)
+	} else {
+		log.Printf("Some error %v\n", err)
+	}
+	conn.Close()
 }

@@ -14,10 +14,11 @@ spec:
       labels:
         msm: proxy
     spec:
+      hostNetwork: true
       containers:
         - name: msm-proxy
           image: ciscolabs/msm-proxy:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - name: grpc
               protocol: TCP
