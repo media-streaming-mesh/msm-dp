@@ -118,7 +118,7 @@ func ListenServer() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8050,
-		IP:   net.ParseIP(serverIP),
+		IP:   net.ParseIP("0.0.0.0"),
 	}
 	ser, err := net.ListenUDP("udp", &addr)
 	if err != nil {
