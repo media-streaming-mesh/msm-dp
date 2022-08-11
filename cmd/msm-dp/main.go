@@ -86,7 +86,6 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 		}
 	}
-	ListenServer()
 	return &pb.StreamResult{
 		Success: true,
 	}, nil
@@ -104,7 +103,7 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
+	ListenServer()
 }
 
 func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
@@ -119,7 +118,7 @@ func ListenServer() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8050,
-		IP:   net.ParseIP("127.0.0.1"),
+		IP:   net.ParseIP(serverIP),
 	}
 	ser, err := net.ListenUDP("udp", &addr)
 	if err != nil {
