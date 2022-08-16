@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
+	"github.com/media-streaming-mesh/msm-dp/cmd/proxy"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -93,6 +94,8 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 func main() {
 	flag.Parse()
+	go proxy.Run()
+	//go ListenServer()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -103,7 +106,6 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-	ListenServer()
 }
 
 func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
@@ -126,6 +128,7 @@ func ListenServer() {
 		return
 	}
 	for {
+		log.Printf("Waiting to Read from UDP")
 		_, remoteAddr, err := ser.ReadFromUDP(p)
 		log.Printf("Read a message from %v %s \n", remoteAddr, p)
 		if err != nil {

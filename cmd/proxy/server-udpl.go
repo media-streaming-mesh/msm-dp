@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"log"
@@ -66,7 +66,7 @@ func (l *serverUdpListener) run() {
 		if err != nil {
 			break
 		}
-
+		log.Printf("UDP Logs run() %v %v", n, addr)
 		func() {
 			l.p.tcpl.mutex.RLock()
 			defer l.p.tcpl.mutex.RUnlock()
@@ -97,6 +97,7 @@ func (l *serverUdpListener) run() {
 			}
 
 			l.p.tcpl.forwardTrack(path, trackId, l.flow, buf[:n])
+			log.Printf("UDP Logs tcpl.forwardTrack -> %v %v %v %v", path, trackId, l.flow, buf[:n])
 		}()
 	}
 

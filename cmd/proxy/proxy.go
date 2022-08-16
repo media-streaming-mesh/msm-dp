@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"fmt"
@@ -63,14 +63,14 @@ type program struct {
 }
 
 func newProgram(sargs []string) (*program, error) {
-	kingpin.CommandLine.Help = "rtsp-simple-server " + Version + "\n\n" +
-		"RTSP server."
+	kingpin.CommandLine.Help = "MSM-Proxy " + Version + "\n\n" +
+		"RTP Proxy."
 
 	argVersion := kingpin.Flag("version", "print version").Bool()
 	argProtocolsStr := kingpin.Flag("protocols", "supported protocols").Default("udp,tcp").String()
 	argRtspPort := kingpin.Flag("rtsp-port", "port of the RTSP TCP listener").Default("8554").Int()
-	argRtpPort := kingpin.Flag("rtp-port", "port of the RTP UDP listener").Default("8000").Int()
-	argRtcpPort := kingpin.Flag("rtcp-port", "port of the RTCP UDP listener").Default("8001").Int()
+	argRtpPort := kingpin.Flag("rtp-port", "port of the RTP UDP listener").Default("8050").Int()
+	argRtcpPort := kingpin.Flag("rtcp-port", "port of the RTCP UDP listener").Default("8051").Int()
 	argReadTimeout := kingpin.Flag("read-timeout", "timeout of read operations").Default("5s").Duration()
 	argWriteTimeout := kingpin.Flag("write-timeout", "timeout of write operations").Default("5s").Duration()
 	argPublishUser := kingpin.Flag("publish-user", "optional username required to publish").Default("").String()
@@ -99,7 +99,7 @@ func newProgram(sargs []string) (*program, error) {
 	}
 
 	if args.version == true {
-		fmt.Println(Version)
+		log.Println(Version)
 		os.Exit(0)
 	}
 
@@ -152,7 +152,7 @@ func newProgram(sargs []string) (*program, error) {
 		return nil, fmt.Errorf("read username and password must be both filled")
 	}
 
-	log.Printf("rtsp-simple-server %s", Version)
+	log.Printf("MSM-Proxy %s", Version)
 
 	p := &program{
 		args:      args,
@@ -184,17 +184,16 @@ func newProgram(sargs []string) (*program, error) {
 }
 
 func (p *program) close() {
+	log.Println("Closing all Listeners---> close()")
 	p.tcpl.close()
 	p.udplRtcp.close()
 	p.udplRtp.close()
 }
 
-func main() {
+func Run() {
 	_, err := newProgram(os.Args[1:])
 	if err != nil {
 		log.Fatal("ERR: ", err)
 	}
-
-	infty := make(chan struct{})
-	<-infty
+	select {}
 }

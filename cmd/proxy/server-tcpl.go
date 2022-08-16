@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"log"
@@ -86,6 +86,8 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 						},
 						buf: frame,
 					}
+					log.Printf("RTP====> _TRACK_FLOW_RTP %v", flow)
+					log.Printf("RTP====> _FRAME %v", frame)
 				} else {
 					l.p.udplRtcp.write <- &udpWrite{
 						addr: &net.UDPAddr{
@@ -95,6 +97,7 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 						},
 						buf: frame,
 					}
+					log.Printf("RTCP ====>  _TRACK_FLOW_RTCP")
 				}
 
 			} else {
@@ -102,6 +105,7 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 					Channel: trackToInterleavedChannel(id, flow),
 					Content: frame,
 				}
+				log.Printf("InterleavedFrame")
 			}
 		}
 	}
