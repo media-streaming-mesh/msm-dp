@@ -120,8 +120,9 @@ func ListenServer() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8050,
-		IP:   net.ParseIP("0.0.0.0"),
+		IP:   net.ParseIP(serverIP),
 	}
+	log.Printf("serverIP ===> %v", serverIP)
 	ser, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		log.Printf("Some error ListenUDP %v\n", err)
@@ -135,6 +136,7 @@ func ListenServer() {
 			log.Printf("Some error ReadFromUDP %v", err)
 			continue
 		}
+		log.Printf("serverIP ----> %v", serverIP)
 		go sendResponse(ser, remoteAddr)
 	}
 }

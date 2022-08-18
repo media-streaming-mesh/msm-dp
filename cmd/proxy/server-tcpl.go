@@ -33,13 +33,13 @@ func newServerTcpListener(p *program) (*serverTcpListener, error) {
 		done:       make(chan struct{}),
 	}
 
-	l.log("opened on :%d", p.args.rtspPort)
+	//l.log("opened on :%d", p.args.rtspPort)
 	return l, nil
 }
 
-func (l *serverTcpListener) log(format string, args ...interface{}) {
-	log.Printf("[TCP listener] "+format, args...)
-}
+//func (l *serverTcpListener) log(format string, args ...interface{}) {
+//	log.Printf("[TCP listener] "+format, args...)
+//}
 
 func (l *serverTcpListener) run() {
 	for {
@@ -74,10 +74,17 @@ func (l *serverTcpListener) close() {
 }
 
 func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, frame []byte) {
+	log.Printf("forwardTrack() %v %v, %v, %v", path, id, flow, frame)
+
 	for c := range l.clients {
 		if c.path == path && c.state == _CLIENT_STATE_PLAY {
+			log.Printf("IP of Client from tcpl _CLIENT_STATE_PLAY %v", c.ip())
 			if c.streamProtocol == _STREAM_PROTOCOL_UDP {
+				log.Printf("IP of Client from tcpl _STREAM_PROTOCOL_UDP %v", c.ip())
+
 				if flow == _TRACK_FLOW_RTP {
+					log.Printf("IP of Client from tcpl _TRACK_FLOW_RTP %v", c.ip())
+
 					l.p.udplRtp.write <- &udpWrite{
 						addr: &net.UDPAddr{
 							IP:   c.ip(),
@@ -89,6 +96,7 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 					log.Printf("RTP====> _TRACK_FLOW_RTP %v", flow)
 					log.Printf("RTP====> _FRAME %v", frame)
 				} else {
+					log.Printf("IP of Client from else updWrite %v", c.ip())
 					l.p.udplRtcp.write <- &udpWrite{
 						addr: &net.UDPAddr{
 							IP:   c.ip(),
@@ -101,6 +109,7 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 				}
 
 			} else {
+				log.Printf("IP of Client from tcpl interleaved %v", c.ip())
 				c.write <- &gortsplib.InterleavedFrame{
 					Channel: trackToInterleavedChannel(id, flow),
 					Content: frame,
@@ -109,4 +118,5 @@ func (l *serverTcpListener) forwardTrack(path string, id int, flow trackFlow, fr
 			}
 		}
 	}
+	log.Printf("forwardTrack() End %v %v, %v, %v", path, id, flow, frame)
 }

@@ -54,6 +54,8 @@ func (l *serverUdpListener) run() {
 		for w := range l.write {
 			l.nconn.SetWriteDeadline(time.Now().Add(l.p.args.writeTimeout))
 			l.nconn.WriteTo(w.buf, w.addr)
+
+			log.Printf("UDP Write %v %v", w.buf, w.addr)
 		}
 	}()
 
@@ -66,7 +68,6 @@ func (l *serverUdpListener) run() {
 		if err != nil {
 			break
 		}
-		log.Printf("UDP Logs run() %v %v", n, addr)
 		func() {
 			l.p.tcpl.mutex.RLock()
 			defer l.p.tcpl.mutex.RUnlock()
@@ -78,13 +79,16 @@ func (l *serverUdpListener) run() {
 						if !pub.ip().Equal(addr.IP) {
 							continue
 						}
+						log.Printf("pub.ip, addr.ip %v %v", n, addr)
 
 						if l.flow == _TRACK_FLOW_RTP {
 							if t.rtpPort == addr.Port {
+								log.Printf("_TRACK_FLOW_RTP === Track ID, ip port ==>  %v %v", pub.path, i)
 								return pub.path, i
 							}
 						} else {
 							if t.rtcpPort == addr.Port {
+								log.Printf("_TRACK_FLOW_RTCP === Track ID, ip port ==>  %v %v", pub.path, i)
 								return pub.path, i
 							}
 						}
@@ -92,6 +96,8 @@ func (l *serverUdpListener) run() {
 				}
 				return "", -1
 			}()
+			log.Printf("path, trackID %v %v", path, trackId)
+
 			if path == "" {
 				return
 			}
