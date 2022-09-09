@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
+	"github.com/libp2p/go-reuseport"
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
-	"github.com/media-streaming-mesh/msm-dp/cmd/proxy"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -94,8 +93,7 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 func main() {
 	flag.Parse()
-	go proxy.Run()
-	//go ListenServer()
+	go ForwardPackets()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -108,52 +106,39 @@ func main() {
 	}
 }
 
-func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("From server: Hello I got your message "), addr)
+func ForwardPackets() {
+	//Listen to data from server pod
+	buffer := make([]byte, 2048)
+	ser, err := reuseport.Dial("udp", "172.18.0.2:8050", "192.168.82.11:8050")
 	if err != nil {
-		log.Printf("Couldn't send response %v", err)
-	}
-}
-
-func ListenServer() {
-	log.Printf("ListenServer()")
-	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8050,
-		IP:   net.ParseIP(serverIP),
-	}
-	log.Printf("serverIP ===> %v", serverIP)
-	ser, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		log.Printf("Some error ListenUDP %v\n", err)
+		log.Printf("Error connect to client %v", err)
 		return
+	} else {
+		log.Printf("Start connection %v %v", ser.LocalAddr(), ser.RemoteAddr())
 	}
+
+	//Start connection to client pod
+	conn, err := reuseport.Dial("udp", "172.18.0.2:8050", "192.168.82.12:8050")
+	if err != nil {
+		log.Printf("Error connect to client %v", err)
+		return
+	} else {
+		log.Printf("Start connection %v %v", conn.LocalAddr(), conn.RemoteAddr())
+	}
+
 	for {
 		log.Printf("Waiting to Read from UDP")
-		_, remoteAddr, err := ser.ReadFromUDP(p)
-		log.Printf("Read a message from %v %s \n", remoteAddr, p)
+		_, err := ser.Read(buffer)
+		log.Printf("Read a message from %v \n", len(buffer))
 		if err != nil {
 			log.Printf("Some error ReadFromUDP %v", err)
-			continue
+		} else {
+			data, err := conn.Write(buffer)
+			if err != nil {
+				log.Printf("Couldn't send response %v", err)
+			} else {
+				log.Printf("Sent %v", data)
+			}
 		}
-		log.Printf("serverIP ----> %v", serverIP)
-		go sendResponse(ser, remoteAddr)
 	}
-}
-
-func DialClient() {
-	p := make([]byte, 2048)
-	conn, err := net.Dial("udp", serverIP+":8000")
-	if err != nil {
-		log.Printf("Some error %v", err)
-		return
-	}
-	fmt.Fprintf(conn, "Hi UDP Server, How are you doing?")
-	_, err = bufio.NewReader(conn).Read(p)
-	if err == nil {
-		log.Printf("%s\n", p)
-	} else {
-		log.Printf("Some error %v\n", err)
-	}
-	conn.Close()
 }
