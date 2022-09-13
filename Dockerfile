@@ -11,6 +11,7 @@ COPY go.sum go.sum
 COPY cmd/ cmd/
 COPY api/ api/
 
+RUN go mod tidy
 RUN go mod download
 
 # Build
