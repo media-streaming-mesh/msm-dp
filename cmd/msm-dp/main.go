@@ -18,8 +18,8 @@ var (
 
 var serverIP string
 var clientIP string
-var serverPort int32
-var clientPort int32
+var serverPort string
+var clientPort string
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -27,18 +27,9 @@ type server struct {
 }
 
 func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
-	log.Printf("Received: message from client Endpoint = %v", in.Endpoint)
-	log.Printf("Received: message from client Enable = %v", in.Enable)
-	log.Printf("Received: message from client Protocol = %v", in.Protocol)
-	log.Printf("Received: message from client Id = %v", in.Id)
-	log.Printf("Received: message from client Operation = %v", in.Operation)
-	//log.Printf("Received: message from client Context = %v", ctx)
-
 	endpoint := reflect.ValueOf(in.Endpoint).Elem()
-	//////endpoint := reflect.ValueOf(in.Endpoint)
-	//log.Println("Endpoint: ", endpoint)
 	protocol := reflect.ValueOf(in.Protocol)
-	//log.Println("Protocol: ", protocol)
+	operation := reflect.ValueOf(in.Operation)
 	switch protocol.Int() {
 	case 0:
 		log.Println("Protocol 0: ", protocol)
@@ -54,17 +45,17 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 	}
 	for i := 0; i < endpoint.NumField(); i++ {
 		f := endpoint.Field(i)
-		if protocol.Int() == 0 {
-			if i == 3 {
-				log.Println("Client IP: ", f)
-				clientIP = f.String()
+		if operation.Int() == 1 {
+			if protocol.Int() == 0 {
+				if i == 3 {
+					log.Println("Client IP: ", f)
+					clientIP = f.String()
+				}
+				if i == 4 {
+					log.Println("Client Port: ", f)
+					//clientPort = f.String()
+				}
 			}
-			if i == 4 {
-				log.Println("Client Port: ", f)
-				//clientPort = f.String()
-
-			}
-
 		}
 		if protocol.Int() == 3 {
 			if i == 3 {
@@ -100,7 +91,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	pb.RegisterMsmDataPlaneServer(s, &server{})
-	log.Printf("server listening at %v", lis.Addr())
+	log.Printf("Started connection with CP at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
@@ -109,35 +100,34 @@ func main() {
 func ForwardPackets() {
 	//Listen to data from server pod
 	buffer := make([]byte, 2048)
-	ser, err := reuseport.Dial("udp", "172.18.0.2:8050", "192.168.82.11:8050")
+	ser, err := reuseport.Dial("udp", "172.18.0.2:8050", serverIP+":8050")
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
 		return
 	} else {
-		log.Printf("Start connection %v %v", ser.LocalAddr(), ser.RemoteAddr())
+		log.Printf("Listening for incoming stream at %v, from server at %v", ser.LocalAddr(), ser.RemoteAddr())
 	}
 
 	//Start connection to client pod
-	conn, err := reuseport.Dial("udp", "172.18.0.2:8050", "192.168.82.12:8050")
+	conn, err := reuseport.Dial("udp", "172.18.0.2:8050", clientIP+":8050")
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
 		return
 	} else {
-		log.Printf("Start connection %v %v", conn.LocalAddr(), conn.RemoteAddr())
+		log.Printf("Forwarding/Proxing Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
 	}
-
+	log.Printf("Waiting to Read Packets")
 	for {
-		log.Printf("Waiting to Read from UDP")
 		_, err := ser.Read(buffer)
-		log.Printf("Read a message from %v \n", len(buffer))
+		log.Printf("Reading packets: %v \n", len(buffer))
 		if err != nil {
-			log.Printf("Some error ReadFromUDP %v", err)
+			log.Printf("Some error while Reading packets %v", err)
 		} else {
 			data, err := conn.Write(buffer)
 			if err != nil {
 				log.Printf("Couldn't send response %v", err)
 			} else {
-				log.Printf("Sent %v", data)
+				log.Printf("Forwarding packets: %v", data)
 			}
 		}
 	}
