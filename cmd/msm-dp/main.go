@@ -29,39 +29,27 @@ type server struct {
 func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
 	endpoint := reflect.ValueOf(in.Endpoint).Elem()
 	protocol := reflect.ValueOf(in.Protocol)
-	switch protocol.Int() {
-	case 0:
-		log.Println("Protocol 0: ", protocol)
-	case 1:
-		log.Println("Protocol 1: ", protocol)
-	case 2:
-		log.Println("Protocol 2: ", protocol)
-	case 3:
-		log.Println("Protocol 3: ", protocol)
-	default:
-		log.Println("Protocol Error")
 
-	}
 	for i := 0; i < endpoint.NumField(); i++ {
 		f := endpoint.Field(i)
 		if protocol.Int() == 0 {
 			if i == 3 {
-				log.Println("Client IP: ", f)
+				//log.Println("Client IP: ", f)
 				clientIP = f.String()
 				go ForwardPackets()
 			}
 			if i == 4 {
-				log.Println("Client Port: ", f)
+				//log.Println("Client Port: ", f)
 				//clientPort = f.String()
 			}
 		}
 		if protocol.Int() == 3 {
 			if i == 3 {
-				log.Println("Server IP: ", f)
+				//log.Println("Server IP: ", f)
 				serverIP = f.String()
 			}
 			if i == 4 {
-				log.Println("Server Port: ", f)
+				//log.Println("Server Port: ", f)
 				//serverPort = f.String()
 
 			}
@@ -96,7 +84,7 @@ func main() {
 
 func ForwardPackets() {
 	//Listen to data from server pod
-	buffer := make([]byte, 2048)
+	buffer := make([]byte, 65536)
 	ser, err := reuseport.Dial("udp", "172.18.0.2:8050", serverIP+":8050")
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
@@ -115,12 +103,12 @@ func ForwardPackets() {
 	}
 	log.Printf("Waiting to Read Packets")
 	for {
-		_, err := ser.Read(buffer)
-		log.Printf("Reading packets: %v \n", len(buffer))
+		n, err := ser.Read(buffer)
+		log.Printf("Reading packets: %v \n", buffer[0:n])
 		if err != nil {
 			log.Printf("Some error while Reading packets %v", err)
 		} else {
-			data, err := conn.Write(buffer)
+			data, err := conn.Write(buffer[0:n])
 			if err != nil {
 				log.Printf("Couldn't send response %v", err)
 			} else {
