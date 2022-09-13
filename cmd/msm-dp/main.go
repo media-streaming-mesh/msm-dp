@@ -29,7 +29,6 @@ type server struct {
 func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
 	endpoint := reflect.ValueOf(in.Endpoint).Elem()
 	protocol := reflect.ValueOf(in.Protocol)
-	operation := reflect.ValueOf(in.Operation)
 	switch protocol.Int() {
 	case 0:
 		log.Println("Protocol 0: ", protocol)
@@ -45,16 +44,15 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 	}
 	for i := 0; i < endpoint.NumField(); i++ {
 		f := endpoint.Field(i)
-		if operation.Int() == 1 {
-			if protocol.Int() == 0 {
-				if i == 3 {
-					log.Println("Client IP: ", f)
-					clientIP = f.String()
-				}
-				if i == 4 {
-					log.Println("Client Port: ", f)
-					//clientPort = f.String()
-				}
+		if protocol.Int() == 0 {
+			if i == 3 {
+				log.Println("Client IP: ", f)
+				clientIP = f.String()
+				go ForwardPackets()
+			}
+			if i == 4 {
+				log.Println("Client Port: ", f)
+				//clientPort = f.String()
 			}
 		}
 		if protocol.Int() == 3 {
@@ -84,7 +82,6 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 
 func main() {
 	flag.Parse()
-	go ForwardPackets()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
