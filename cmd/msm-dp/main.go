@@ -7,9 +7,13 @@ import (
 	"github.com/libp2p/go-reuseport"
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	"google.golang.org/grpc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"log"
 	"net"
 	"reflect"
+	"strings"
 )
 
 var (
@@ -20,6 +24,7 @@ var serverIP string
 var clientIP string
 var serverPort string
 var clientPort string
+var localIP string
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -69,6 +74,7 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 }
 
 func main() {
+	getPodsIP()
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
@@ -115,5 +121,34 @@ func ForwardPackets() {
 				log.Printf("Forwarding packets: %v", data)
 			}
 		}
+	}
+}
+func getPodsIP() {
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientSet
+	clientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	pods, err := clientSet.CoreV1().Pods("default").List(context.TODO(), metav1.ListOptions{})
+
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("There are %d Endpoints in the cluster\n", len(pods.Items))
+
+	for _, pod := range pods.Items {
+		// fmt.Printf("%+v\n", ep)
+		var podName = strings.Contains(pod.Name, "proxy")
+		if podName == true {
+			localIP = pod.Status.PodIP
+			fmt.Println(pod.Name, pod.Status.PodIP)
+		}
+
 	}
 }
