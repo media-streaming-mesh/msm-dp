@@ -6,15 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Increase the buffer size and forward only the bytes that are received instead of complete buffer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/proxy/proxy.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/proxy/server-client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/proxy/server-tcpl.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/proxy/server-udpl.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/test-client/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

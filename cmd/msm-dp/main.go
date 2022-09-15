@@ -14,16 +14,17 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 var (
 	port = flag.Int("port", 9000, "The server port")
 )
 
+var wg sync.WaitGroup
+
 var serverIP string
 var clientIP string
-var serverPort string
-var clientPort string
 var localIP string
 
 // server is used to implement msm_dp.server.
@@ -31,7 +32,7 @@ type server struct {
 	pb.UnimplementedMsmDataPlaneServer
 }
 
-func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
+func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
 	endpoint := reflect.ValueOf(in.Endpoint).Elem()
 	protocol := reflect.ValueOf(in.Protocol)
 
@@ -74,6 +75,7 @@ func (s *server) StreamAddDel(ctx context.Context, in *pb.StreamData) (*pb.Strea
 }
 
 func main() {
+	wg.Add(1)
 	getPodsIP()
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
@@ -91,7 +93,7 @@ func main() {
 func ForwardPackets() {
 	//Listen to data from server pod
 	buffer := make([]byte, 65536)
-	ser, err := reuseport.Dial("udp", "172.18.0.2:8050", serverIP+":8050")
+	ser, err := reuseport.Dial("udp", localIP+":8050", serverIP+":8050")
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
 		return
@@ -100,7 +102,7 @@ func ForwardPackets() {
 	}
 
 	//Start connection to client pod
-	conn, err := reuseport.Dial("udp", "172.18.0.2:8050", clientIP+":8050")
+	conn, err := reuseport.Dial("udp", localIP+":8050", clientIP+":8050")
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
 		return
@@ -140,15 +142,15 @@ func getPodsIP() {
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("There are %d Endpoints in the cluster\n", len(pods.Items))
+	//fmt.Printf("There are %d Endpoints in the cluster\n", len(pods.Items))
 
 	for _, pod := range pods.Items {
 		// fmt.Printf("%+v\n", ep)
 		var podName = strings.Contains(pod.Name, "proxy")
 		if podName == true {
 			localIP = pod.Status.PodIP
-			fmt.Println(pod.Name, pod.Status.PodIP)
+			//fmt.Println(pod.Name, pod.Status.PodIP)
 		}
-
 	}
+	wg.Done()
 }
