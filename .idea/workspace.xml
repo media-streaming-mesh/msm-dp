@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Update: Dynamically update localIP">
-      <change afterPath="$PROJECT_DIR$/cmd/msm-dp/main_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/msm-dp/proxt_test.go" afterDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Commented out the buffer logs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,6 +44,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
+    "Git.Branch.Popup.ShowAllRemotes": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.go.format.on.save.advertiser.fired": "true",
@@ -138,7 +137,9 @@
     <MESSAGE value="docker file update" />
     <MESSAGE value="Increase the buffer size and forward only the bytes that are received instead of complete buffer" />
     <MESSAGE value="Update: Dynamically update localIP" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update: Dynamically update localIP" />
+    <MESSAGE value="unit test added" />
+    <MESSAGE value="Commented out the buffer logs" />
+    <option name="LAST_COMMIT_MESSAGE" value="Commented out the buffer logs" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

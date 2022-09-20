@@ -26,6 +26,8 @@ var wg sync.WaitGroup
 var serverIP string
 var clientIP string
 var localIP string
+var serverPort string
+var clientPort string
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -33,8 +35,14 @@ type server struct {
 }
 
 func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
+	log.Printf("Received: message from CP --> Endpoint = %v", in.Endpoint)
+	log.Printf("Received: message from CP --> Enable = %v", in.Enable)
+	log.Printf("Received: message from CP --> Protocol = %v", in.Protocol)
+	log.Printf("Received: message from CP --> Id = %v", in.Id)
+	log.Printf("Received: message from CP --> Operation = %v", in.Operation)
 	endpoint := reflect.ValueOf(in.Endpoint).Elem()
 	protocol := reflect.ValueOf(in.Protocol)
+	operation := reflect.ValueOf(in.Operation)
 
 	for i := 0; i < endpoint.NumField(); i++ {
 		f := endpoint.Field(i)
@@ -42,11 +50,13 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			if i == 3 {
 				//log.Println("Client IP: ", f)
 				clientIP = f.String()
-				go ForwardPackets()
+				if operation.Int() == 3 {
+					go ForwardPackets()
+				}
 			}
 			if i == 4 {
 				//log.Println("Client Port: ", f)
-				//clientPort = f.String()
+				clientPort = f.String()
 			}
 		}
 		if protocol.Int() == 3 {
@@ -56,7 +66,7 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			}
 			if i == 4 {
 				//log.Println("Server Port: ", f)
-				//serverPort = f.String()
+				serverPort = f.String()
 
 			}
 		}
@@ -95,7 +105,7 @@ func ForwardPackets() {
 	buffer := make([]byte, 65536)
 	ser, err := reuseport.Dial("udp", localIP+":8050", serverIP+":8050")
 	if err != nil {
-		log.Printf("Error connect to client %v", err)
+		log.Printf("Error connect to server %v", err)
 		return
 	} else {
 		log.Printf("Listening for incoming stream at %v, from server at %v", ser.LocalAddr(), ser.RemoteAddr())
@@ -110,18 +120,20 @@ func ForwardPackets() {
 		log.Printf("Forwarding/Proxing Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
 	}
 	log.Printf("Waiting to Read Packets")
+	log.Printf("Proxying check Stub logs")
 	for {
 		n, err := ser.Read(buffer)
-		log.Printf("Reading packets: %v \n", buffer[0:n])
+		//log.Printf("Reading packets: %v \n", buffer[0:n])
 		if err != nil {
 			log.Printf("Some error while Reading packets %v", err)
 		} else {
-			data, err := conn.Write(buffer[0:n])
+			_, err := conn.Write(buffer[0:n])
 			if err != nil {
 				log.Printf("Couldn't send response %v", err)
-			} else {
-				log.Printf("Forwarding packets: %v", data)
 			}
+			//} else {
+			//	log.Printf("Forwarding packets: %v", data)
+			//}
 		}
 	}
 }
