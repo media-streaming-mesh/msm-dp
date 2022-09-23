@@ -18,7 +18,8 @@ import (
 )
 
 var (
-	port = flag.Int("port", 9000, "The server port")
+	port      = flag.Int("port", 9000, "The server port")
+	proxyPort = flag.String("proxyPort", "8050", "proxy port")
 )
 
 var wg sync.WaitGroup
@@ -103,7 +104,7 @@ func main() {
 func ForwardPackets() {
 	//Listen to data from server pod
 	buffer := make([]byte, 65536)
-	ser, err := reuseport.Dial("udp", localIP+":8050", serverIP+":8050")
+	ser, err := reuseport.Dial("udp", localIP+":"+*proxyPort, serverIP+":"+*proxyPort)
 	if err != nil {
 		log.Printf("Error connect to server %v", err)
 		return
@@ -112,7 +113,7 @@ func ForwardPackets() {
 	}
 
 	//Start connection to client pod
-	conn, err := reuseport.Dial("udp", localIP+":8050", clientIP+":8050")
+	conn, err := reuseport.Dial("udp", localIP+":"+*proxyPort, clientIP+":"+*proxyPort)
 	if err != nil {
 		log.Printf("Error connect to client %v", err)
 		return
