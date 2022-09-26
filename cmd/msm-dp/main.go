@@ -12,7 +12,6 @@ import (
 	"k8s.io/client-go/rest"
 	"log"
 	"net"
-	"reflect"
 	"strings"
 	"sync"
 )
@@ -25,10 +24,11 @@ var (
 var wg sync.WaitGroup
 
 var serverIP string
-var clientIP string
+var clientIPs []string
 var localIP string
 var serverPort string
 var clientPort string
+var clients = make(chan []string)
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -41,47 +41,26 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 	log.Printf("Received: message from CP --> Protocol = %v", in.Protocol)
 	log.Printf("Received: message from CP --> Id = %v", in.Id)
 	log.Printf("Received: message from CP --> Operation = %v", in.Operation)
-	endpoint := reflect.ValueOf(in.Endpoint).Elem()
-	protocol := reflect.ValueOf(in.Protocol)
-	operation := reflect.ValueOf(in.Operation)
 
-	for i := 0; i < endpoint.NumField(); i++ {
-		f := endpoint.Field(i)
-		if protocol.Int() == 0 {
-			if i == 3 {
-				//log.Println("Client IP: ", f)
-				clientIP = f.String()
-				if operation.Int() == 3 {
-					go ForwardPackets()
-				}
-			}
-			if i == 4 {
-				//log.Println("Client Port: ", f)
-				clientPort = f.String()
-			}
-		}
-		if protocol.Int() == 3 {
-			if i == 3 {
-				//log.Println("Server IP: ", f)
-				serverIP = f.String()
-			}
-			if i == 4 {
-				//log.Println("Server Port: ", f)
-				serverPort = f.String()
-
-			}
-		}
-
-		//TODO: handle other protocols, 1: UDP and 2: QUIC
-		if protocol.Int() == 1 {
-
-		}
-		if protocol.Int() == 2 {
-
-		}
+	if in.Operation.String() == "CREATE" {
+		serverIP = in.Endpoint.Ip
+		log.Printf("Server IP: %v", serverIP)
 	}
+	if in.Operation.String() == "ADD_EP" {
+		clientIPs = append(clientIPs, in.Endpoint.Ip)
+		go func() {
+			clients <- clientIPs
+		}()
+		log.Printf("Client IP: %v", clientIPs)
+		go ForwardPackets()
+	}
+	if in.Operation.String() == "DEL_EP" {
+		remove(clientIPs, in.Endpoint.Ip)
+		log.Printf("Connection closed, Endpoint Deleted %v", in.Endpoint.Ip)
+	}
+
 	return &pb.StreamResult{
-		Success: true,
+		Success: in.Enable,
 	}, nil
 }
 
@@ -112,31 +91,36 @@ func ForwardPackets() {
 		log.Printf("Listening for incoming stream at %v, from server at %v", ser.LocalAddr(), ser.RemoteAddr())
 	}
 
-	//Start connection to client pod
-	conn, err := reuseport.Dial("udp", localIP+":"+*proxyPort, clientIP+":"+*proxyPort)
-	if err != nil {
-		log.Printf("Error connect to client %v", err)
-		return
-	} else {
-		log.Printf("Forwarding/Proxing Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
-	}
-	log.Printf("Waiting to Read Packets")
-	log.Printf("Proxying check Stub logs")
-	for {
-		n, err := ser.Read(buffer)
-		//log.Printf("Reading packets: %v \n", buffer[0:n])
+	for _, clientIP := range <-clients {
+		fmt.Println(clientIP)
+		//Start connection to client pod
+		conn, err := reuseport.Dial("udp", localIP+":"+*proxyPort, clientIP+":"+*proxyPort)
 		if err != nil {
-			log.Printf("Some error while Reading packets %v", err)
+			log.Printf("Error connect to client %v", err)
+			return
 		} else {
-			_, err := conn.Write(buffer[0:n])
+			log.Printf("Forwarding/Proxing Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
+		}
+		log.Printf("Waiting to Read Packets")
+		log.Printf("Proxying check Stub logs")
+
+		for {
+			n, err := ser.Read(buffer)
+			//log.Printf("Reading packets: %v \n", buffer[0:n])
 			if err != nil {
-				log.Printf("Couldn't send response %v", err)
+				log.Printf("Some error while Reading packets %v", err)
+			} else {
+				_, err := conn.Write(buffer[0:n])
+				if err != nil {
+					log.Printf("Couldn't send response %v", err)
+				}
+				//} else {
+				//	log.Printf("Forwarding packets: %v", data)
+				//}
 			}
-			//} else {
-			//	log.Printf("Forwarding packets: %v", data)
-			//}
 		}
 	}
+
 }
 func getPodsIP() {
 	// creates the in-cluster config
@@ -166,4 +150,13 @@ func getPodsIP() {
 		}
 	}
 	wg.Done()
+}
+
+func remove[T comparable](l []T, item T) []T {
+	for i, other := range l {
+		if other == item {
+			return append(l[:i], l[i+1:]...)
+		}
+	}
+	return l
 }

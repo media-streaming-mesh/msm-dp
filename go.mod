@@ -1,6 +1,6 @@
 module github.com/media-streaming-mesh/msm-dp
 
-go 1.17
+go 1.18
 
 require (
 	google.golang.org/grpc v1.48.0
