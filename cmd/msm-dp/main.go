@@ -52,7 +52,10 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			clients <- clientIPs
 		}()
 		log.Printf("Client IP: %v", clientIPs)
-		go ForwardPackets()
+		for range clientIPs {
+			go ForwardPackets()
+		}
+
 	}
 	if in.Operation.String() == "DEL_EP" {
 		remove(clientIPs, in.Endpoint.Ip)
