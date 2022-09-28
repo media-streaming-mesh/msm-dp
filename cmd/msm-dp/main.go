@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-reuseport"
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	"google.golang.org/grpc"
+	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -17,8 +18,9 @@ import (
 )
 
 var (
-	port      = flag.Int("port", 9000, "The server port")
-	proxyPort = flag.String("proxyPort", "8050", "proxy port")
+	port     = flag.Int("port", 9000, "The server port")
+	rtpPort  = flag.String("rtpPort", "8050", "rtp port")
+	rtcpPort = flag.String("rtcpPort", "8051", "rtcp port")
 )
 
 var wg sync.WaitGroup
@@ -86,23 +88,24 @@ func main() {
 func ForwardPackets() {
 	//Listen to data from server pod
 	buffer := make([]byte, 65536)
-	ser, err := reuseport.Dial("udp", localIP+":"+*proxyPort, serverIP+":"+*proxyPort)
+	go rtcpConnection()
+	ser, err := reuseport.Dial("udp", localIP+":"+*rtpPort, serverIP+":"+*rtpPort)
 	if err != nil {
 		log.Printf("Error connect to server %v", err)
 		return
 	} else {
-		log.Printf("Listening for incoming stream at %v, from server at %v", ser.LocalAddr(), ser.RemoteAddr())
+		log.Printf("Listening for RTP incoming stream at %v, from server at %v", ser.LocalAddr(), ser.RemoteAddr())
 	}
 
 	for _, clientIP := range <-clients {
 		fmt.Println(clientIP)
 		//Start connection to client pod
-		conn, err := reuseport.Dial("udp", localIP+":"+*proxyPort, clientIP+":"+*proxyPort)
+		conn, err := reuseport.Dial("udp", localIP+":"+*rtpPort, clientIP+":"+*rtpPort)
 		if err != nil {
 			log.Printf("Error connect to client %v", err)
 			return
 		} else {
-			log.Printf("Forwarding/Proxing Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
+			log.Printf("Forwarding/Proxing RTP Stream from %v, to client at %v", conn.LocalAddr(), conn.RemoteAddr())
 		}
 		log.Printf("Waiting to Read Packets")
 		log.Printf("Proxying check Stub logs")
@@ -162,4 +165,54 @@ func remove[T comparable](l []T, item T) []T {
 		}
 	}
 	return l
+}
+
+func handleStream(connSrc net.Conn, connDest net.Conn) {
+	defer connSrc.Close()
+	for {
+		//var bufferSrc []byte
+		bufferSrc := make([]byte, 10*1024)
+		srcRSize, errSrcR := connSrc.Read(bufferSrc)
+		if errSrcR == io.EOF || errSrcR != nil {
+			log.Println("Read error:", errSrcR)
+			break
+		}
+		srcWSize, errSrcW := connDest.Write(bufferSrc[0:srcRSize])
+		if errSrcW != nil {
+			log.Println("Write error:", errSrcW)
+			return
+		}
+		log.Println("size", srcRSize, srcWSize)
+		if srcRSize < 1024 {
+			//log.Println("bufferSrc", string(bufferSrc))
+		}
+	}
+}
+
+func handleConnection(connSrc net.Conn, rAddr string) {
+	connDest, err := reuseport.Dial("udp", localIP+":"+*rtcpPort, rAddr+":"+*rtcpPort)
+	log.Printf("Forwarding/Proxing RTCP Stream from %v, to client at %v", connDest.LocalAddr(), connDest.RemoteAddr())
+
+	if err != nil {
+		log.Println("Dial error:", err)
+		return
+	}
+	go handleStream(connSrc, connDest)
+	go handleStream(connDest, connSrc)
+}
+
+func rtcpConnection() {
+
+	ln, err := reuseport.Dial("udp", localIP+":"+*rtcpPort, serverIP+":"+*rtpPort)
+	log.Printf("Listening for RTCP incoming stream at %v, from server at %v", ln.LocalAddr(), ln.RemoteAddr())
+
+	if err != nil {
+		log.Println("Listen error:", err)
+		return
+	}
+	for {
+		for _, clientIP := range <-clients {
+			go handleConnection(ln, clientIP)
+		}
+	}
 }
