@@ -18,9 +18,8 @@ import (
 )
 
 var (
-	port     = flag.Int("port", 9000, "The server port")
-	rtpPort  = flag.String("rtpPort", "8050", "rtp port")
-	rtcpPort = flag.String("rtcpPort", "8051", "rtcp port")
+	port    = flag.Int("port", 9000, "The server port")
+	rtpPort = flag.Int("rtpPort", 8050, "rtp port")
 )
 
 var wg sync.WaitGroup
@@ -89,7 +88,7 @@ func ForwardPackets() {
 	//Listen to data from server pod
 	buffer := make([]byte, 65536)
 	go rtcpConnection()
-	ser, err := reuseport.Dial("udp", localIP+":"+*rtpPort, serverIP+":"+*rtpPort)
+	ser, err := reuseport.Dial("udp", localIP+fmt.Sprintf(":%d", *rtpPort), serverIP+fmt.Sprintf(":%d", *rtpPort))
 	if err != nil {
 		log.Printf("Error connect to server %v", err)
 		return
@@ -100,7 +99,7 @@ func ForwardPackets() {
 	for _, clientIP := range <-clients {
 		fmt.Println(clientIP)
 		//Start connection to client pod
-		conn, err := reuseport.Dial("udp", localIP+":"+*rtpPort, clientIP+":"+*rtpPort)
+		conn, err := reuseport.Dial("udp", localIP+fmt.Sprintf(":%d", *rtpPort), clientIP+fmt.Sprintf(":%d", *rtpPort))
 		if err != nil {
 			log.Printf("Error connect to client %v", err)
 			return
@@ -171,7 +170,7 @@ func handleStream(connSrc net.Conn, connDest net.Conn) {
 	defer connSrc.Close()
 	for {
 		//var bufferSrc []byte
-		bufferSrc := make([]byte, 10*1024)
+		bufferSrc := make([]byte, 65536)
 		srcRSize, errSrcR := connSrc.Read(bufferSrc)
 		if errSrcR == io.EOF || errSrcR != nil {
 			log.Println("Read error:", errSrcR)
@@ -183,14 +182,11 @@ func handleStream(connSrc net.Conn, connDest net.Conn) {
 			return
 		}
 		log.Println("size", srcRSize, srcWSize)
-		if srcRSize < 1024 {
-			//log.Println("bufferSrc", string(bufferSrc))
-		}
 	}
 }
 
 func handleConnection(connSrc net.Conn, rAddr string) {
-	connDest, err := reuseport.Dial("udp", localIP+":"+*rtcpPort, rAddr+":"+*rtcpPort)
+	connDest, err := reuseport.Dial("udp", localIP+fmt.Sprintf(":%d", *rtpPort+1), rAddr+fmt.Sprintf(":%d", *rtpPort+1))
 	log.Printf("Forwarding/Proxing RTCP Stream from %v, to client at %v", connDest.LocalAddr(), connDest.RemoteAddr())
 
 	if err != nil {
@@ -203,7 +199,7 @@ func handleConnection(connSrc net.Conn, rAddr string) {
 
 func rtcpConnection() {
 
-	ln, err := reuseport.Dial("udp", localIP+":"+*rtcpPort, serverIP+":"+*rtpPort)
+	ln, err := reuseport.Dial("udp", localIP+fmt.Sprintf(":%d", *rtpPort+1), serverIP+fmt.Sprintf(":%d", *rtpPort+1))
 	log.Printf("Listening for RTCP incoming stream at %v, from server at %v", ln.LocalAddr(), ln.RemoteAddr())
 
 	if err != nil {
