@@ -57,8 +57,13 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		if in.Operation.String() == "ADD_EP" {
 			client_addrs = append(client_addrs, client)
 		} else if in.Operation.String() == "DEL_EP" {
-			remove(client_addrs, SliceIndex(len(client_addrs), func(i int) bool { return client_addrs[i] == client }))
-			log.Printf("Connection closed, Endpoint Deleted %v", client)
+			entry := SliceIndex(len(client_addrs), func(i int) bool { return client_addrs[i] == client })
+			if entry >= 0 {
+				client_addrs = remove(client_addrs, entry)
+				log.Printf("Connection closed, Endpoint Deleted %v", client)
+			} else {
+				logs.WithError(err).Fatal("unable to find client addr", client)
+			}
 		}
 
 		log.Printf("Client IPs: %v", client_addrs)
@@ -174,8 +179,14 @@ func getPodsIP() {
 	wg.Done()
 }
 
-func remove(s []netip.AddrPort, index int) []netip.AddrPort {
-	return append(s[:index], s[index+1:]...)
+func remove(s []netip.AddrPort, i int) []netip.AddrPort {
+	if len(s) > 1 {
+		s[i] = s[len(s)-1]
+		return s[:len(s)-1]
+	}
+
+	log.Printf("deleting only entry in slice")
+	return nil
 }
 
 func SliceIndex(limit int, predicate func(i int) bool) int {
@@ -184,5 +195,7 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 			return i
 		}
 	}
+
+	log.Printf("unable to find entry in slice")
 	return -1
 }
