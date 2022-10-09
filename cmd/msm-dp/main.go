@@ -4,18 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
-	"net"
-	"net/netip"
-	"strings"
-	"sync"
-
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	logs "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"log"
+	"net"
+	"net/netip"
+	"sync"
 )
 
 var (
@@ -26,12 +21,7 @@ var (
 var wg sync.WaitGroup
 
 var serverIP string
-var client_addrs []netip.AddrPort
-var localIP string
-var serverPort string
-var clientPort string
-
-//var clients = make(chan []string)
+var clientAddrs []netip.AddrPort
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -55,18 +45,18 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		}
 
 		if in.Operation.String() == "ADD_EP" {
-			client_addrs = append(client_addrs, client)
+			clientAddrs = append(clientAddrs, client)
 		} else if in.Operation.String() == "DEL_EP" {
-			entry := SliceIndex(len(client_addrs), func(i int) bool { return client_addrs[i] == client })
+			entry := SliceIndex(len(clientAddrs), func(i int) bool { return clientAddrs[i] == client })
 			if entry >= 0 {
-				client_addrs = remove(client_addrs, entry)
+				clientAddrs = remove(clientAddrs, entry)
 				log.Printf("Connection closed, Endpoint Deleted %v", client)
 			} else {
 				logs.WithError(err).Fatal("unable to find client addr", client)
 			}
 		}
 
-		log.Printf("Client IPs: %v", client_addrs)
+		log.Printf("Client IPs: %v", clientAddrs)
 	}
 
 	return &pb.StreamResult{
@@ -76,7 +66,6 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 
 func main() {
 	wg.Add(1)
-	getPodsIP()
 	flag.Parse()
 
 	// open socket to listen to CP messages
@@ -112,13 +101,13 @@ func forwardPackets(port uint16) {
 	//Listen to data from server pod
 	buffer := make([]byte, 65536)
 
-	udp_port, err := netip.ParseAddrPort(fmt.Sprintf("0.0.0.0:%d", port))
+	udpPort, err := netip.ParseAddrPort(fmt.Sprintf("0.0.0.0:%d", port))
 
 	if err != nil {
 		logs.WithError(err).Fatal("unable to create UDP addr:", fmt.Sprintf("0.0.0.0:%d", port))
 	}
 
-	sourceConn, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(udp_port))
+	sourceConn, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(udpPort))
 
 	if err != nil {
 		logs.WithError(err).Fatal("Could not listen on address:", serverIP+fmt.Sprintf("0.0.0.0:%d", port))
@@ -141,42 +130,12 @@ func forwardPackets(port uint16) {
 			logs.WithError(err).Error("Could not receive a packet")
 			continue
 		}
-		for _, client := range client_addrs {
+		for _, client := range clientAddrs {
 			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client); err != nil {
 				logs.WithError(err).Warn("Could not forward packet.")
 			}
 		}
 	}
-}
-
-func getPodsIP() {
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientSet
-	clientSet, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	pods, err := clientSet.CoreV1().Pods("default").List(context.TODO(), metav1.ListOptions{})
-
-	if err != nil {
-		panic(err.Error())
-	}
-	//fmt.Printf("There are %d Endpoints in the cluster\n", len(pods.Items))
-
-	for _, pod := range pods.Items {
-		// fmt.Printf("%+v\n", ep)
-		var podName = strings.Contains(pod.Name, "proxy")
-		if podName == true {
-			localIP = pod.Status.PodIP
-			//fmt.Println(pod.Name, pod.Status.PodIP)
-		}
-	}
-	wg.Done()
 }
 
 func remove(s []netip.AddrPort, i int) []netip.AddrPort {
