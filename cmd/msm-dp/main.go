@@ -125,6 +125,8 @@ func forwardPackets(port uint16) {
 		return
 	}
 
+	logs.Printf("socket is %v", sourceConn.LocalAddr().String())
+
 	defer func(sourceConn net.Conn) {
 		err := sourceConn.Close()
 		if err != nil {
