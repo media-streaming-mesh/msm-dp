@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Code Refactoring for Jenkins Pipeline Test">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
-    </list>
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Client updated" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,7 +21,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="undial" />
+        <entry key="$PROJECT_DIR$" value="jenkins_test" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -163,7 +160,8 @@
     <MESSAGE value="RTP/RTCP" />
     <MESSAGE value="Code Refactor" />
     <MESSAGE value="Code Refactoring for Jenkins Pipeline Test" />
-    <option name="LAST_COMMIT_MESSAGE" value="Code Refactoring for Jenkins Pipeline Test" />
+    <MESSAGE value="Client updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="Client updated" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

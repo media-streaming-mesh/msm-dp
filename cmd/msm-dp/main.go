@@ -71,7 +71,7 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			}
 		}
 
-		log.Printf("Client IPs: %+v", clients)
+		log.Printf("Client(s): %+v\n", clients)
 	}
 
 	return &pb.StreamResult{
