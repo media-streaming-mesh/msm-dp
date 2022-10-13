@@ -21,7 +21,16 @@ var (
 var wg sync.WaitGroup
 
 var serverIP string
-var clientAddrs []netip.AddrPort
+
+var clients []Clients
+
+type Clients struct {
+	IpAndPort     netip.AddrPort
+	StreamType    uint32
+	StreamId      uint32
+	Encapsulation uint32
+	Enable        bool
+}
 
 // server is used to implement msm_dp.server.
 type server struct {
@@ -44,19 +53,25 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			logs.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
 		}
 
-		if in.Operation.String() == "ADD_EP" {
-			clientAddrs = append(clientAddrs, client)
+		if in.Operation.String() == "UPD_EP" {
+			clients = append(clients, Clients{
+				IpAndPort:     client,
+				StreamId:      in.Id,
+				StreamType:    in.Endpoint.QuicStream,
+				Encapsulation: in.Endpoint.Encap,
+				Enable:        in.Enable,
+			})
 		} else if in.Operation.String() == "DEL_EP" {
-			entry := SliceIndex(len(clientAddrs), func(i int) bool { return clientAddrs[i] == client })
+			entry := SliceIndex(len(clients), func(i int) bool { return clients[i].IpAndPort == client })
 			if entry >= 0 {
-				clientAddrs = remove(clientAddrs, entry)
+				clients = remove(clients, entry)
 				log.Printf("Connection closed, Endpoint Deleted %v", client)
 			} else {
 				logs.WithError(err).Fatal("unable to find client addr", client)
 			}
 		}
 
-		log.Printf("Client IPs: %v", clientAddrs)
+		log.Printf("Client IPs: %+v", clients)
 	}
 
 	return &pb.StreamResult{
@@ -130,21 +145,21 @@ func forwardPackets(port uint16) {
 			logs.WithError(err).Error("Could not receive a packet")
 			continue
 		}
-		for _, client := range clientAddrs {
-			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client); err != nil {
+		for _, client := range clients {
+			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
 				logs.WithError(err).Warn("Could not forward packet.")
 			}
 		}
 	}
 }
 
-func remove(s []netip.AddrPort, i int) []netip.AddrPort {
+func remove(s []Clients, i int) []Clients {
 	if len(s) > 1 {
 		s[i] = s[len(s)-1]
 		return s[:len(s)-1]
 	}
 
-	log.Printf("deleting only entry in slice")
+	log.Printf("deleting only entry in the list")
 	return nil
 }
 
@@ -155,6 +170,6 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 		}
 	}
 
-	log.Printf("unable to find entry in slice")
+	log.Printf("unable to find entry in list")
 	return -1
 }
