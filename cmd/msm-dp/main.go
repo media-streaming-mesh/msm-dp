@@ -27,7 +27,6 @@ var clients []Clients
 type Clients struct {
 	IpAndPort     netip.AddrPort
 	StreamType    uint32
-	StreamId      uint32
 	Encapsulation uint32
 	Enable        bool
 }
@@ -56,7 +55,6 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		if in.Operation.String() == "UPD_EP" {
 			clients = append(clients, Clients{
 				IpAndPort:     client,
-				StreamId:      in.Id,
 				StreamType:    in.Endpoint.QuicStream,
 				Encapsulation: in.Endpoint.Encap,
 				Enable:        in.Enable,
