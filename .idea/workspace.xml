@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Client updated">
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="removed stream id from client">
+      <change afterPath="$PROJECT_DIR$/.github/workflows/ci.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -164,7 +164,8 @@
     <MESSAGE value="Code Refactor" />
     <MESSAGE value="Code Refactoring for Jenkins Pipeline Test" />
     <MESSAGE value="Client updated" />
-    <option name="LAST_COMMIT_MESSAGE" value="Client updated" />
+    <MESSAGE value="removed stream id from client" />
+    <option name="LAST_COMMIT_MESSAGE" value="removed stream id from client" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
