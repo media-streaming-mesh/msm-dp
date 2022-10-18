@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="removed stream id from client">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/ci.yaml" afterDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="added the ci.yaml file for CI/CD github actions">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/ci.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -165,7 +167,8 @@
     <MESSAGE value="Code Refactoring for Jenkins Pipeline Test" />
     <MESSAGE value="Client updated" />
     <MESSAGE value="removed stream id from client" />
-    <option name="LAST_COMMIT_MESSAGE" value="removed stream id from client" />
+    <MESSAGE value="added the ci.yaml file for CI/CD github actions" />
+    <option name="LAST_COMMIT_MESSAGE" value="added the ci.yaml file for CI/CD github actions" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
