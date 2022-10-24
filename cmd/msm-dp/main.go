@@ -42,6 +42,7 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 	log.Printf("Received: message from CP --> Protocol = %v", in.Protocol)
 	log.Printf("Received: message from CP --> Id = %v", in.Id)
 	log.Printf("Received: message from CP --> Operation = %v", in.Operation)
+	log.Printf("Received: message from CP --> Operation = %v", in.Operation)
 
 	if in.Operation.String() == "CREATE" {
 		serverIP = in.Endpoint.Ip
