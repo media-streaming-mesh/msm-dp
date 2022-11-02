@@ -2,15 +2,24 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
+	"github.com/lucas-clemente/quic-go"
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
+	quick "github.com/media-streaming-mesh/msm-dp/cmd/quic"
 	logs "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"log"
+	"math/big"
 	"net"
 	"net/netip"
 	"sync"
+	"time"
 )
 
 var (
@@ -92,8 +101,9 @@ func main() {
 	pb.RegisterMsmDataPlaneServer(s, &server{})
 
 	// Create goroutines for RTP and RTCP
-	go forwardPackets(uint16(*rtpPort))
-	go forwardPackets(uint16(*rtpPort + 1))
+	//go forwardPackets(uint16(*rtpPort))
+	//go forwardPackets(uint16(*rtpPort + 1))
+	go quicForwarder()
 
 	log.Printf("Listening for CP messages at %v", lis.Addr())
 
@@ -172,4 +182,84 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 
 	log.Printf("unable to find entry in list")
 	return -1
+}
+
+func generateTLSConfig() (*tls.Config, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key),
+	})
+	b := pem.Block{Type: "CERTIFICATE", Bytes: certDER}
+	certPEM := pem.EncodeToMemory(&b)
+
+	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+		NextProtos:   []string{"quick"},
+	}, nil
+}
+
+func quicForwarder() {
+	buffer := make([]byte, 65536)
+
+	quicConfig := &quic.Config{
+		MaxIdleTimeout: time.Minute,
+	}
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"quic"},
+	}
+
+	tlsConf, err := generateTLSConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	ln, err := quick.Listen("udp", ":8050", tlsConf, quicConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Waiting for incoming connection")
+	conn, err := ln.Accept()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Established connection")
+
+	for {
+		n, err := conn.Read(buffer)
+
+		if err != nil {
+			logs.WithError(err).Error("Could not receive a packet")
+			continue
+		}
+		for _, client := range clients {
+			conn, err := quick.Dial(client.IpAndPort.String(), tlsConf, quicConfig)
+			if err != nil {
+				panic(err)
+			}
+			if _, err := conn.Write(buffer[0:n]); err != nil {
+				logs.WithError(err).Warn("Could not forward packet.")
+			}
+		}
+	}
 }

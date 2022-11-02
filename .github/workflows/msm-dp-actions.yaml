@@ -27,4 +27,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Build Container and Push to Docker Hub
-        run: docker buildx build --push --platform linux/amd64,linux/arm64 -t ciscolabs/msm-proxy:latest .
+        run: docker buildx build --push --platform linux/amd64,linux/arm64 -t ciscolabs/msm-proxy:rtp-rtp-over-quic .
