@@ -4,12 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 	"net"
 	"net/netip"
 	"sync"
+
+	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -84,7 +85,8 @@ func main() {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	log.SetLevel(log.TraceLevel)
-	//log.SetReportCaller(true)
+	// log.SetReportCaller(true)
+
 	wg.Add(1)
 	flag.Parse()
 
@@ -151,10 +153,14 @@ func forwardPackets(port uint16) {
 		if err != nil {
 			log.WithError(err).Error("Could not receive a packet")
 			continue
+		} else {
+			log.Trace("read ", n, " bytes")
 		}
 		for _, client := range clients {
 			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
 				log.WithError(err).Warn("Could not forward packet.")
+			} else {
+				log.Trace("sent to ", client.IpAndPort)
 			}
 		}
 	}
