@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"os"
 	"sync"
 
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
@@ -16,6 +17,7 @@ import (
 var (
 	port    = flag.Int("port", 9000, "The server port")
 	rtpPort = flag.Int("rtpPort", 8050, "rtp port")
+	logger  *log.Logger
 )
 
 var wg sync.WaitGroup
@@ -37,19 +39,19 @@ type server struct {
 }
 
 func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
-	log.Debugf("Received: message from CP --> Endpoint = %v", in.Endpoint)
-	log.Debugf("Received: message from CP --> Enable = %v", in.Enable)
-	log.Debugf("Received: message from CP --> Protocol = %v", in.Protocol)
-	log.Debugf("Received: message from CP --> Id = %v", in.Id)
-	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
+	logger.Debugf("Received: message from CP --> Endpoint = %v", in.Endpoint)
+	logger.Debugf("Received: message from CP --> Enable = %v", in.Enable)
+	logger.Debugf("Received: message from CP --> Protocol = %v", in.Protocol)
+	logger.Debugf("Received: message from CP --> Id = %v", in.Id)
+	logger.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 
 	if in.Operation.String() == "CREATE" {
 		serverIP = in.Endpoint.Ip
-		log.Infof("Server IP: %v", serverIP)
+		logger.Infof("Server IP: %v", serverIP)
 	} else {
 		client, err := netip.ParseAddrPort(in.Endpoint.Ip + fmt.Sprintf(":%d", in.Endpoint.Port))
 		if err != nil {
-			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
+			logger.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
 		}
 
 		if in.Operation.String() == "UPD_EP" {
@@ -63,13 +65,13 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			entry := SliceIndex(len(clients), func(i int) bool { return clients[i].IpAndPort == client })
 			if entry >= 0 {
 				clients = remove(clients, entry)
-				log.Tracef("Connection closed, Endpoint Deleted %v", client)
+				logger.Tracef("Connection closed, Endpoint Deleted %v", client)
 			} else {
-				log.WithError(err).Fatal("unable to find client addr", client)
+				logger.WithError(err).Fatal("unable to find client addr", client)
 			}
 		}
 
-		log.Infof("Client(s): %+v\n", clients)
+		logger.Infof("Client(s): %+v\n", clients)
 	}
 
 	return &pb.StreamResult{
@@ -77,23 +79,27 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 	}, nil
 }
 
-func main() {
-	log.SetFormatter(&log.TextFormatter{
+func init() {
+	logger = log.New()
+
+	logger.SetFormatter(&log.TextFormatter{
 		ForceColors:     true,
 		DisableColors:   false,
 		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
+		TimestampFormat: "2006-01-02 15:04:05.123",
 	})
-	log.SetLevel(log.TraceLevel)
-	// log.SetReportCaller(true)
 
+	setLogLvl(logger)
+}
+
+func main() {
 	wg.Add(1)
 	flag.Parse()
 
 	// open socket to listen to CP messages
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatalf("failed to listen: %v", err)
 	}
 
 	// Create gRPC server for messages from CP
@@ -104,17 +110,17 @@ func main() {
 	go forwardPackets(uint16(*rtpPort))
 	go forwardPackets(uint16(*rtpPort + 1))
 
-	log.Info("Listening for CP messages at ", lis.Addr())
+	logger.Info("Listening for CP messages at ", lis.Addr())
 
 	// Serve requests from the control plane
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatalf("failed to serve: %v", err)
 	}
 
 	defer func(lis net.Listener) {
 		err := lis.Close()
 		if err != nil {
-			log.Fatalf("failed to close connection with CP: %v", err)
+			logger.Fatalf("failed to close connection with CP: %v", err)
 		}
 	}(lis)
 }
@@ -126,41 +132,41 @@ func forwardPackets(port uint16) {
 	udpPort, err := netip.ParseAddrPort(fmt.Sprintf("0.0.0.0:%d", port))
 
 	if err != nil {
-		log.WithError(err).Fatal("unable to create UDP addr:", fmt.Sprintf("0.0.0.0:%d", port))
+		logger.WithError(err).Fatal("unable to create UDP addr:", fmt.Sprintf("0.0.0.0:%d", port))
 	}
 
 	sourceConn, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(udpPort))
 
 	if err != nil {
-		log.WithError(err).Fatal("Could not listen on address:", serverIP+fmt.Sprintf("0.0.0.0:%d", port))
+		logger.WithError(err).Fatal("Could not listen on address:", serverIP+fmt.Sprintf("0.0.0.0:%d", port))
 		return
 	}
 
-	log.Info("socket is ", sourceConn.LocalAddr().String())
+	logger.Info("socket is ", sourceConn.LocalAddr().String())
 
 	defer func(sourceConn net.Conn) {
 		err := sourceConn.Close()
 		if err != nil {
-			log.WithError(err).Fatal("Could not close sourceConn:", err)
+			logger.WithError(err).Fatal("Could not close sourceConn:", err)
 		}
 	}(sourceConn)
 
-	log.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
+	logger.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
 
 	for {
 		n, err := sourceConn.Read(buffer)
 
 		if err != nil {
-			log.WithError(err).Error("Could not receive a packet")
+			logger.WithError(err).Error("Could not receive a packet")
 			continue
 		} else {
-			log.Trace("read ", n, " bytes")
+			logger.Trace("read ", n, " bytes")
 		}
 		for _, client := range clients {
 			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
-				log.WithError(err).Warn("Could not forward packet.")
+				logger.WithError(err).Warn("Could not forward packet.")
 			} else {
-				log.Trace("sent to ", client.IpAndPort)
+				logger.Trace("sent to ", client.IpAndPort)
 			}
 		}
 	}
@@ -172,7 +178,7 @@ func remove(s []Clients, i int) []Clients {
 		return s[:len(s)-1]
 	}
 
-	log.Trace("deleting only entry in the list")
+	logger.Trace("deleting only entry in the list")
 	return nil
 }
 
@@ -183,6 +189,28 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 		}
 	}
 
-	log.Trace("unable to find entry in list")
+	logger.Trace("unable to find entry in list")
 	return -1
+}
+
+// sets the log level of the logger
+func setLogLvl(l *log.Logger) {
+	logLevel := os.Getenv("LOG_LVL")
+
+	switch logLevel {
+	case "DEBUG":
+		l.SetLevel(log.DebugLevel)
+	case "WARN":
+		l.SetLevel(log.WarnLevel)
+	case "INFO":
+		l.SetLevel(log.InfoLevel)
+	case "ERROR":
+		l.SetLevel(log.ErrorLevel)
+	case "TRACE":
+		l.SetLevel(log.TraceLevel)
+	case "FATAL":
+		l.SetLevel(log.FatalLevel)
+	default:
+		l.SetLevel(log.WarnLevel)
+	}
 }
