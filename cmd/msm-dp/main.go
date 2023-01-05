@@ -52,29 +52,15 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
 		}
 
-		if in.Operation.String() == "ADD_EP" {
-			//if in.Endpoint.Ip != "10.200.97.20" {
-			//	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
-			//	log.Debugf("IP is %v cannot Add Endpoint", "10.200.97.20")
-			//} else if in.Endpoint.Ip != "10.200.97.21" {
-			//	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
-			//	log.Debugf("IP is %v cannot Add Endpoint", "10.200.97.21")
-			//} else {
+		if in.Operation.String() == "UPD_EP" {
 			clients = append(clients, Clients{
 				IpAndPort:     client,
 				StreamType:    in.Endpoint.QuicStream,
 				Encapsulation: in.Endpoint.Encap,
+				Enable:        in.Enable,
 			})
 			log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 			log.Debugf("Client Added with IP %v", client)
-
-			//}
-		}
-		if in.Operation.String() == "UPD_EP" {
-			clients = append(clients, Clients{
-				Enable: in.Enable,
-			})
-			log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 			log.Debugf("Client stream data enable state is %v", in.Enable)
 		} else if in.Operation.String() == "DEL_EP" {
 			if (client.Addr().String() == "10.200.97.20") || (client.Addr().String() == "10.200.97.21") {
