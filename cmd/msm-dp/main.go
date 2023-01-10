@@ -42,7 +42,8 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 	//log.Debugf("Received: message from CP --> Enable = %v", in.Enable)
 	//log.Debugf("Received: message from CP --> Protocol = %v", in.Protocol)
 	//log.Debugf("Received: message from CP --> Id = %v", in.Id)
-	//log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
+
+	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 
 	if in.Operation.String() == "CREATE" {
 		serverIP = in.Endpoint.Ip
@@ -67,20 +68,17 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 					Enable:        in.Enable,
 				})
 			}
-			log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 			log.Debugf("Client Added with IP %v", client)
 			log.Debugf("Client stream data enable state is %v", in.Enable)
 		} else if in.Operation.String() == "DEL_EP" {
 			entry := SliceIndex(len(clients), func(i int) bool { return clients[i].IpAndPort == client })
 			if entry >= 0 {
 				clients = remove(clients, entry)
-				log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 				log.Debugf("Connection closed, Endpoint Deleted %v", client)
 			} else {
 				log.WithError(err).Fatal("Unable to find client addr", client)
 			}
 		} else if in.Operation.String() == "DELETE" {
-			log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 			clients = nil
 			log.Debugf("All clients are deleted %v", clients)
 		}
@@ -100,7 +98,7 @@ func main() {
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	log.SetLevel(log.TraceLevel)
+	log.SetLevel(log.DebugLevel)
 	// log.SetReportCaller(true)
 
 	wg.Add(1)
