@@ -11,8 +11,7 @@ All code is in a single module. and the RTP/RTCP proxy runs as two instances of 
 
 To do:
 
-1. Verify operation for inbound external non-interleaved clients
-2. Implement hash-map for multiple streams
-3. verify support for multiple source ports from the same IP
-4. add RTPoQUIC support to enable node-to-node streams
-5. verify inbound/outbound external support for both interleaved and non-interleaved RTSP
+1. Implement hash-map for multiple streams
+2. verify support for multiple source ports from the same IP
+3. add RTPoQUIC support to enable node-to-node streams
+4. verify inbound/outbound external support for both interleaved and non-interleaved RTSP
