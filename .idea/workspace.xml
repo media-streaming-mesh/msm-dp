@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Refactor: Adding Clients on ADD_EP and Updating the Enable State on UDP_EP.&#10;Deleting single client on DEL_EP and All clients on DELETE.">
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Fixed the missing address warning while streaming video">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -175,7 +177,8 @@
     <MESSAGE value="removed stream id from client" />
     <MESSAGE value="added the ci.yaml file for CI/CD github actions" />
     <MESSAGE value="Refactor: Adding Clients on ADD_EP and Updating the Enable State on UDP_EP.&#10;Deleting single client on DEL_EP and All clients on DELETE." />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor: Adding Clients on ADD_EP and Updating the Enable State on UDP_EP.&#10;Deleting single client on DEL_EP and All clients on DELETE." />
+    <MESSAGE value="Fixed the missing address warning while streaming video" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed the missing address warning while streaming video" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
