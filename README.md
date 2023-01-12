@@ -1,6 +1,6 @@
 # MSM RTP Proxy
 
-This is a simple reference implementation of the MSM RTP Proxy Data Plane.
+This is a simple reference implementation of the MSM RTP Proxy Data Plane, written in Golang.   Not intended for production deployments as feature set is limited and as Garbage Collection is likely to cause packet drops.
 
 It consists of two halves:
 
