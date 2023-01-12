@@ -45,10 +45,19 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 
 	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 
-	if in.Operation.String() == "CREATE" {
+	switch in.Operation.String() {
+	case "CREATE":
 		serverIP = in.Endpoint.Ip
 		log.Infof("Server IP: %v", serverIP)
-	} else {
+
+	case "UPDATE":
+		log.Errorf("unexpected UPDATE")
+
+	case "DELETE":
+		clients = nil
+		log.Debugf("All clients are deleted %v", clients)
+
+	default:
 		client, err := netip.ParseAddrPort(in.Endpoint.Ip + fmt.Sprintf(":%d", in.Endpoint.Port))
 		if err != nil {
 			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
@@ -57,34 +66,34 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		if err != nil {
 			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port+1)
 		}
-
-		if in.Operation.String() == "UPD_EP" {
-			if (client.String() != "10.200.97.20") || (client.String() != "10.200.97.21") {
-				clients = append(clients, Clients{
-					IpAndPort:     client,
-					rtcp:          rtcp,
-					StreamType:    in.Endpoint.QuicStream,
-					Encapsulation: in.Endpoint.Encap,
-					Enable:        in.Enable,
-				})
-			}
+		if in.Operation.String() == "ADD_EP" {
+			clients = append(clients, Clients{
+				IpAndPort:     client,
+				rtcp:          rtcp,
+				StreamType:    in.Endpoint.QuicStream,
+				Encapsulation: in.Endpoint.Encap,
+				Enable:        in.Enable,
+			})
 			log.Debugf("Client Added with IP %v", client)
 			log.Debugf("Client stream data enable state is %v", in.Enable)
-		} else if in.Operation.String() == "DEL_EP" {
+		} else {
 			entry := SliceIndex(len(clients), func(i int) bool { return clients[i].IpAndPort == client })
 			if entry >= 0 {
-				clients = remove(clients, entry)
-				log.Debugf("Connection closed, Endpoint Deleted %v", client)
+				if in.Operation.String() == "UPD_EP" {
+					clients[entry].Enable = in.Enable
+				} else if in.Operation.String() == "DEL_EP" {
+					clients = remove(clients, entry)
+					log.Debugf("Connection closed, Endpoint Deleted %v", client)
+				} else {
+					log.WithError(err).Fatal("Invalid operation", in.Operation.String())
+				}
 			} else {
 				log.WithError(err).Fatal("Unable to find client addr", client)
 			}
-		} else if in.Operation.String() == "DELETE" {
-			clients = nil
-			log.Debugf("All clients are deleted %v", clients)
 		}
-
-		log.Infof("Client(s): %+v\n", clients)
 	}
+
+	log.Infof("Client(s): %+v\n", clients)
 
 	return &pb.StreamResult{
 		Success: in.Enable,
