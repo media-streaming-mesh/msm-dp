@@ -171,20 +171,24 @@ func forwardRTPPackets(port uint16) {
 	log.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
 
 	for {
-		n, err := sourceConn.Read(buffer)
+		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
 
 		if err != nil {
 			log.WithError(err).Error("Could not receive a packet")
 			continue
 		} else {
-			log.Trace("read ", n, " bytes")
+			log.Trace("read ", n, " bytes of RTP from ", sourceAddr)
 		}
-		for _, client := range clients {
-			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
-				log.WithError(err).Warn("Could not forward packet.")
-			} else {
-				log.Trace("sent to ", client.IpAndPort)
+		if sourceAddr.IP.Equal(net.ParseIP(serverIP)) {
+			for _, client := range clients {
+				if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
+					log.WithError(err).Warn("Could not forward packet.")
+				} else {
+					log.Trace("sent to ", client.IpAndPort)
+				}
 			}
+		} else {
+			log.Trace("RTP not from server", net.IP(serverIP))
 		}
 	}
 }
@@ -218,20 +222,24 @@ func forwardRTCPPackets(port uint16) {
 	log.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
 
 	for {
-		n, err := sourceConn.Read(buffer)
+		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
 
 		if err != nil {
 			log.WithError(err).Error("Could not receive rtcp packet")
 			continue
 		} else {
-			log.Trace("read ", n, " bytes")
+			log.Trace("read ", n, " bytes of RTCP from ", sourceAddr)
 		}
-		for _, client := range clients {
-			if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.rtcp); err != nil {
-				log.WithError(err).Warn("Could not forward rtcp packet.")
-			} else {
-				log.Trace("sent to ", client.rtcp)
+		if sourceAddr.IP.Equal(net.ParseIP(serverIP)) {
+			for _, client := range clients {
+				if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.rtcp); err != nil {
+					log.WithError(err).Warn("Could not forward rtcp packet.")
+				} else {
+					log.Trace("sent to ", client.rtcp)
+				}
 			}
+		} else {
+			log.Trace("RTCP not from server", net.IP(serverIP))
 		}
 	}
 }
