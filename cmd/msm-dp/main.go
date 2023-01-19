@@ -29,6 +29,8 @@ var streams = make(map[uint32]Stream)
 
 var flows = make(map[*net.UDPAddr][]net.UDPAddr)
 
+var currentStreamID uint32
+
 // server is used to implement msm_dp.server
 type server struct {
 	pb.UnimplementedMsmDataPlaneServer
@@ -47,17 +49,10 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 
 		if !exists {
 			streams[in.Id] = Stream{server: &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}, clients: []Endpoint{}}
+			flows[streams[in.Id].server] = []net.UDPAddr{}
 			log.Infof("New stream ID: %v, source %v:%v", in.Id, in.Endpoint.Ip, in.Endpoint.Port)
-			//flows[streams[in.Id].server] = []net.UDPAddr{*streams[in.Id].server}
-
-			flow, ok := flows[streams[in.Id].server]
-			if ok {
-				flow = append(flow, *streams[in.Id].server)
-			} else {
-				log.Infof("no data-plane flow found for stream %v", in.Id)
-			}
 			log.Debugf("flows: %v", flows)
-			log.Debugf("streams: %v", streams)
+			currentStreamID = in.Id
 		} else {
 			log.Errorf("Stream with ID %d already exists", in.Id)
 		}
@@ -72,9 +67,12 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		stream := streams[in.Id]
 
 		if in.Operation.String() == "ADD_EP" {
-			clients := append(streams[in.Id].clients, Endpoint{enabled: in.Enable, address: *client})
-			stream.clients = clients
-			flows[streams[in.Id].server] = append(flows[streams[in.Id].server], *client)
+			flow, ok := flows[streams[in.Id].server]
+			if !ok {
+				flows[streams[in.Id].server] = []net.UDPAddr{*client}
+			} else {
+				flows[streams[in.Id].server] = append(flow, *client)
+			}
 			log.Infof("Client %v added to stream %v", client, in.Id)
 			log.Debugf("flows: %v", flows)
 		} else if in.Operation.String() == "UPD_EP" {
@@ -83,10 +81,10 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 					endpoint.enabled = in.Enable
 					if in.Enable {
 						flow, ok := flows[streams[in.Id].server]
-						if ok {
-							flow = append(flow, *client)
+						if !ok {
+							flows[streams[in.Id].server] = []net.UDPAddr{*client}
 						} else {
-							log.Infof("no data-plane flow found for stream %v", in.Id)
+							flows[streams[in.Id].server] = append(flow, *client)
 						}
 					} else {
 						for i, flow_client := range flows[streams[in.Id].server] {
@@ -127,24 +125,20 @@ func forwardRTPPackets(port uint16) {
 
 	buffer := make([]byte, 65507)
 	for {
-		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
+		n, _, err := sourceConn.ReadFromUDP(buffer)
 		if err != nil {
 			log.WithError(err).Warn("Error while reading RTP packet.")
 			continue
 		}
-		log.Debugf("Forwarding packet from %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
-		log.Debugf("flows: %v", flows)
-		clients, ok := flows[sourceAddr]
-		if !ok {
-			for _, client := range clients {
-				if _, err := sourceConn.WriteToUDP(buffer[0:n], &client); err != nil {
-					log.WithError(err).Warn("Could not forward packet.")
-				} else {
-					log.Trace("sent to ", client)
-				}
+		//log.Debugf("Forwarding packet from %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
+		//log.Debugf("flows: %v", flows)
+		clients, _ := flows[streams[currentStreamID].server]
+		for _, client := range clients {
+			if _, err := sourceConn.WriteToUDP(buffer[0:n], &client); err != nil {
+				log.WithError(err).Warn("Could not forward packet.")
+			} else {
+				log.Trace("sent to ", client)
 			}
-		} else {
-			log.Debugf("unable to find source address %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
 		}
 	}
 }
