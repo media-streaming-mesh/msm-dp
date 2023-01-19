@@ -74,7 +74,9 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		if in.Operation.String() == "ADD_EP" {
 			clients := append(streams[in.Id].clients, Endpoint{enabled: in.Enable, address: *client})
 			stream.clients = clients
+			flows[streams[in.Id].server] = append(flows[streams[in.Id].server], *client)
 			log.Infof("Client %v added to stream %v", client, in.Id)
+			log.Debugf("flows: %v", flows)
 		} else if in.Operation.String() == "UPD_EP" {
 			for _, endpoint := range streams[in.Id].clients {
 				if AddressEqual(&endpoint.address, client) {
@@ -133,7 +135,7 @@ func forwardRTPPackets(port uint16) {
 		log.Debugf("Forwarding packet from %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
 		log.Debugf("flows: %v", flows)
 		clients, ok := flows[sourceAddr]
-		if ok {
+		if !ok {
 			for _, client := range clients {
 				if _, err := sourceConn.WriteToUDP(buffer[0:n], &client); err != nil {
 					log.WithError(err).Warn("Could not forward packet.")
