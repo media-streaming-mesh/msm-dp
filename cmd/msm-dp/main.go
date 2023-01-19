@@ -4,13 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
-	"net/netip"
-	"sync"
-
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"net"
 )
 
 var (
@@ -18,18 +15,20 @@ var (
 	rtpPort = flag.Int("rtpPort", 8050, "rtp port")
 )
 
-var wg sync.WaitGroup
+var streams []Streams
 
-var serverIP string
+type Server struct {
+	Addr *net.UDPAddr
+	ID   uint32
+}
 
-var clients []Clients
-
-type Clients struct {
-	IpAndPort     netip.AddrPort
-	rtcp          netip.AddrPort
-	StreamType    uint32
-	Encapsulation uint32
-	Enable        bool
+type Streams struct {
+	server  *Server
+	clients []Client
+}
+type Client struct {
+	Addr *net.UDPAddr
+	ID   uint32
 }
 
 // server is used to implement msm_dp.server.
@@ -38,66 +37,115 @@ type server struct {
 }
 
 func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
-	//log.Debugf("Received: message from CP --> Endpoint = %v", in.Endpoint)
-	//log.Debugf("Received: message from CP --> Enable = %v", in.Enable)
-	//log.Debugf("Received: message from CP --> Protocol = %v", in.Protocol)
-	//log.Debugf("Received: message from CP --> Id = %v", in.Id)
-
 	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
-
 	switch in.Operation.String() {
 	case "CREATE":
-		serverIP = in.Endpoint.Ip
-		log.Infof("Server IP: %v", serverIP)
-
+		server := Server{
+			Addr: &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""},
+			ID:   in.Id,
+		}
+		stream := Streams{
+			server: &server,
+		}
+		// check if the stream already exists in the streams array
+		exists := false
+		for _, s := range streams {
+			if s.server.ID == in.Id {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			streams = append(streams, stream)
+			log.Infof("Server IP: %v", server.Addr)
+		} else {
+			log.Errorf("Stream with ID %d already exists", in.Id)
+		}
 	case "UPDATE":
 		log.Errorf("unexpected UPDATE")
-
 	case "DELETE":
-		clients = nil
-		log.Debugf("All clients are deleted %v", clients)
-
-	default:
-		client, err := netip.ParseAddrPort(in.Endpoint.Ip + fmt.Sprintf(":%d", in.Endpoint.Port))
-		if err != nil {
-			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port)
-		}
-		rtcp, err := netip.ParseAddrPort(in.Endpoint.Ip + fmt.Sprintf(":%d", in.Endpoint.Port+1))
-		if err != nil {
-			log.WithError(err).Fatal("unable to create client addr", in.Endpoint.Ip, in.Endpoint.Port+1)
-		}
-		if in.Operation.String() == "ADD_EP" {
-			clients = append(clients, Clients{
-				IpAndPort:     client,
-				rtcp:          rtcp,
-				StreamType:    in.Endpoint.QuicStream,
-				Encapsulation: in.Endpoint.Encap,
-				Enable:        in.Enable,
-			})
-			log.Debugf("Client Added with IP %v", client)
-			log.Debugf("Client stream data enable state is %v", in.Enable)
-		} else {
-			entry := SliceIndex(len(clients), func(i int) bool { return clients[i].IpAndPort == client })
-			if entry >= 0 {
-				if in.Operation.String() == "UPD_EP" {
-					clients[entry].Enable = in.Enable
-				} else if in.Operation.String() == "DEL_EP" {
-					clients = remove(clients, entry)
-					log.Debugf("Connection closed, Endpoint Deleted %v", client)
-				} else {
-					log.WithError(err).Fatal("Invalid operation", in.Operation.String())
+		for i, stream := range streams {
+			if stream.server.ID == in.Id {
+				if len(stream.clients) == 0 {
+					// remove the element from the array
+					copy(streams[i:], streams[i+1:])
+					streams[len(streams)-1] = Streams{}
+					streams = streams[:len(streams)-1]
+					log.Debugf("All clients and server are deleted %v", streams)
+					break
 				}
-			} else {
-				log.WithError(err).Fatal("Unable to find client addr", client)
+			}
+		}
+	default:
+		client := &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}
+		if in.Operation.String() == "ADD_EP" {
+			// Iterate through the streams
+			for _, stream := range streams {
+				// check if the id is match
+				if stream.server.ID == in.Id {
+					stream.clients = append(stream.clients, Client{
+						Addr: client,
+						ID:   stream.server.ID,
+					})
+					log.Infof("Client IP: %v added to server ID: %v", client, in.Id)
+					break
+				}
+			}
+		}
+
+		if in.Operation.String() == "DEL_EP" {
+			// Iterate through the streams
+			for _, stream := range streams {
+				// check if the id is match
+				if stream.server.ID == in.Id {
+					for i, c := range stream.clients {
+						if c.Addr.String() == client.String() {
+							stream.clients = append(stream.clients[:i], stream.clients[i+1:]...)
+							log.Infof("Client IP: %v deleted from server ID: %v", client, in.Id)
+							break
+						}
+					}
+					break
+				}
 			}
 		}
 	}
+	return &pb.StreamResult{}, nil
+}
 
-	log.Infof("Client(s): %+v\n", clients)
+func forwardRTPPackets(port uint16) {
+	sourceAddr := &net.UDPAddr{IP: net.ParseIP("0.0.0.0"), Port: int(port), Zone: ""}
+	sourceConn, err := net.ListenUDP("udp", sourceAddr)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start listening on RTP port.")
+	}
+	defer func(sourceConn *net.UDPConn) {
+		err := sourceConn.Close()
+		if err != nil {
+			log.WithError(err).Warn("Unable to close sourceConn")
+		}
+	}(sourceConn)
 
-	return &pb.StreamResult{
-		Success: in.Enable,
-	}, nil
+	buffer := make([]byte, 65507)
+	for {
+		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
+		if err != nil {
+			log.WithError(err).Warn("Error while reading RTP packet.")
+			continue
+		}
+
+		for _, stream := range streams {
+			if sourceAddr.IP.Equal(stream.server.Addr.IP) {
+				for _, client := range stream.clients {
+					if _, err := sourceConn.WriteToUDP(buffer[0:n], client.Addr); err != nil {
+						log.WithError(err).Warn("Could not forward packet.")
+					} else {
+						log.Trace("sent to ", client.Addr)
+					}
+				}
+			}
+		}
+	}
 }
 
 func main() {
@@ -110,7 +158,6 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 	// log.SetReportCaller(true)
 
-	wg.Add(1)
 	flag.Parse()
 
 	// open socket to listen to CP messages
@@ -125,7 +172,7 @@ func main() {
 
 	// Create goroutines for RTP and RTCP
 	go forwardRTPPackets(uint16(*rtpPort))
-	go forwardRTCPPackets(uint16(*rtpPort + 1))
+	//go forwardRTCPPackets(uint16(*rtpPort + 1))
 
 	log.Info("Listening for CP messages at ", lis.Addr())
 
@@ -140,127 +187,4 @@ func main() {
 			log.Fatalf("failed to close connection with CP: %v", err)
 		}
 	}(lis)
-}
-
-func forwardRTPPackets(port uint16) {
-	//Listen to data from server pod
-	buffer := make([]byte, 65536)
-
-	udpPort, err := netip.ParseAddrPort(fmt.Sprintf("0.0.0.0:%d", port))
-
-	if err != nil {
-		log.WithError(err).Fatal("unable to create UDP addr:", fmt.Sprintf("0.0.0.0:%d", port))
-	}
-
-	sourceConn, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(udpPort))
-
-	if err != nil {
-		log.WithError(err).Fatal("Could not listen on address:", serverIP+fmt.Sprintf("0.0.0.0:%d", port))
-		return
-	}
-
-	log.Info("socket is ", sourceConn.LocalAddr().String())
-
-	defer func(sourceConn net.Conn) {
-		err := sourceConn.Close()
-		if err != nil {
-			log.WithError(err).Fatal("Could not close sourceConn:", err)
-		}
-	}(sourceConn)
-
-	log.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
-
-	for {
-		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
-
-		if err != nil {
-			log.WithError(err).Error("Could not receive a packet")
-			continue
-		} else {
-			log.Trace("read ", n, " bytes of RTP from ", sourceAddr)
-		}
-		if sourceAddr.IP.Equal(net.ParseIP(serverIP)) {
-			for _, client := range clients {
-				if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.IpAndPort); err != nil {
-					log.WithError(err).Warn("Could not forward packet.")
-				} else {
-					log.Trace("sent to ", client.IpAndPort)
-				}
-			}
-		} else {
-			log.Trace("RTP not from server", net.IP(serverIP))
-		}
-	}
-}
-
-func forwardRTCPPackets(port uint16) {
-	//Listen to data from server pod
-	buffer := make([]byte, 65536)
-
-	udpPort, err := netip.ParseAddrPort(fmt.Sprintf("0.0.0.0:%d", port))
-
-	if err != nil {
-		log.WithError(err).Fatal("unable to create UDP addr:", fmt.Sprintf("0.0.0.0:%d", port))
-	}
-
-	sourceConn, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(udpPort))
-
-	if err != nil {
-		log.WithError(err).Fatal("Could not listen on address:", serverIP+fmt.Sprintf("0.0.0.0:%d", port))
-		return
-	}
-
-	log.Info("socket is ", sourceConn.LocalAddr().String())
-
-	defer func(sourceConn net.Conn) {
-		err := sourceConn.Close()
-		if err != nil {
-			log.WithError(err).Fatal("Could not close sourceConn:", err)
-		}
-	}(sourceConn)
-
-	log.Info("===> Starting proxy, Source at ", serverIP+fmt.Sprintf(":%d", port))
-
-	for {
-		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
-
-		if err != nil {
-			log.WithError(err).Error("Could not receive rtcp packet")
-			continue
-		} else {
-			log.Trace("read ", n, " bytes of RTCP from ", sourceAddr)
-		}
-		if sourceAddr.IP.Equal(net.ParseIP(serverIP)) {
-			for _, client := range clients {
-				if _, err := sourceConn.WriteToUDPAddrPort(buffer[0:n], client.rtcp); err != nil {
-					log.WithError(err).Warn("Could not forward rtcp packet.")
-				} else {
-					log.Trace("sent to ", client.rtcp)
-				}
-			}
-		} else {
-			log.Trace("RTCP not from server", net.IP(serverIP))
-		}
-	}
-}
-
-func remove(s []Clients, i int) []Clients {
-	if len(s) > 1 {
-		s[i] = s[len(s)-1]
-		return s[:len(s)-1]
-	}
-
-	log.Trace("deleting only entry in the list")
-	return nil
-}
-
-func SliceIndex(limit int, predicate func(i int) bool) int {
-	for i := 0; i < limit; i++ {
-		if predicate(i) {
-			return i
-		}
-	}
-
-	log.Trace("unable to find entry in list")
-	return -1
 }
