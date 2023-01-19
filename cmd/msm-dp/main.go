@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
+
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"net"
 )
 
 var (
@@ -15,99 +16,84 @@ var (
 	rtpPort = flag.Int("rtpPort", 8050, "rtp port")
 )
 
-var streams []Streams
-
-type Server struct {
-	Addr *net.UDPAddr
-	ID   uint32
+type Endpoint struct {
+	enabled bool
+	address net.UDPAddr
+}
+type Stream struct {
+	server  *net.UDPAddr
+	clients []Endpoint
 }
 
-type Streams struct {
-	server  *Server
-	clients []Client
-}
-type Client struct {
-	Addr *net.UDPAddr
-	ID   uint32
-}
+var streams map[uint32]Stream
 
-// server is used to implement msm_dp.server.
+var flows map[*net.UDPAddr][]net.UDPAddr
+
+// server is used to implement msm_dp.server
 type server struct {
 	pb.UnimplementedMsmDataPlaneServer
+}
+
+func AddressEqual(first *net.UDPAddr, second *net.UDPAddr) bool {
+	return first.IP.Equal(second.IP) && first.Port == second.Port && first.Zone == second.Zone
 }
 
 func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamResult, error) {
 	log.Debugf("Received: message from CP --> Operation = %v", in.Operation)
 	switch in.Operation.String() {
 	case "CREATE":
-		server := Server{
-			Addr: &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""},
-			ID:   in.Id,
-		}
-		stream := Streams{
-			server: &server,
-		}
 		// check if the stream already exists in the streams array
-		exists := false
-		for _, s := range streams {
-			if s.server.ID == in.Id {
-				exists = true
-				break
-			}
-		}
+		_, exists := streams[in.Id]
+
 		if !exists {
-			streams = append(streams, stream)
-			log.Infof("Server IP: %v", server.Addr)
+			streams[in.Id] = Stream{server: &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}, clients: []Endpoint{}}
+			log.Infof("New stream ID: %v, source %v:%v", in.Id, in.Endpoint.Ip, in.Endpoint.Port)
 		} else {
 			log.Errorf("Stream with ID %d already exists", in.Id)
 		}
 	case "UPDATE":
 		log.Errorf("unexpected UPDATE")
 	case "DELETE":
-		for i, stream := range streams {
-			if stream.server.ID == in.Id {
-				if len(stream.clients) == 0 {
-					// remove the element from the array
-					copy(streams[i:], streams[i+1:])
-					streams[len(streams)-1] = Streams{}
-					streams = streams[:len(streams)-1]
-					log.Debugf("All clients and server are deleted %v", streams)
-					break
-				}
-			}
-		}
+		delete(streams, in.Id)
+		log.Infof("Deleted stream ID: %v", in.Id)
 	default:
 		client := &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}
-		if in.Operation.String() == "ADD_EP" {
-			// Iterate through the streams
-			for _, stream := range streams {
-				// check if the id is match
-				if stream.server.ID == in.Id {
-					stream.clients = append(stream.clients, Client{
-						Addr: client,
-						ID:   stream.server.ID,
-					})
-					log.Infof("Client IP: %v added to server ID: %v", client, in.Id)
-					break
-				}
-			}
-		}
+		stream := streams[in.Id]
 
-		if in.Operation.String() == "DEL_EP" {
-			// Iterate through the streams
-			for _, stream := range streams {
-				// check if the id is match
-				if stream.server.ID == in.Id {
-					for i, c := range stream.clients {
-						if c.Addr.String() == client.String() {
-							stream.clients = append(stream.clients[:i], stream.clients[i+1:]...)
-							log.Infof("Client IP: %v deleted from server ID: %v", client, in.Id)
-							break
+		if in.Operation.String() == "ADD_EP" {
+			clients := append(streams[in.Id].clients, Endpoint{enabled: in.Enable, address: *client})
+			stream.clients = clients
+			log.Infof("Client %v added to stream %v", client, in.Id)
+		} else if in.Operation.String() == "UPD_EP" {
+			for _, endpoint := range streams[in.Id].clients {
+				if AddressEqual(&endpoint.address, client) {
+					endpoint.enabled = in.Enable
+					if in.Enable {
+						flow, ok := flows[streams[in.Id].server]
+						if ok {
+							flow = append(flow, *client)
+						} else {
+							log.Infof("no data-plane flow found for stream %v", in.Id)
+						}
+					} else {
+						for i, flow_client := range flows[streams[in.Id].server] {
+							if AddressEqual(&flow_client, client) {
+								flows[streams[in.Id].server] = append(flows[streams[in.Id].server][:i], flows[streams[in.Id].server][i+1:]...)
+								break
+							}
 						}
 					}
 					break
 				}
 			}
+		} else if in.Operation.String() == "DEL_EP" {
+			for i, endpoint := range streams[in.Id].clients {
+				if AddressEqual(&endpoint.address, client) {
+					stream.clients = append(stream.clients[:i], stream.clients[i+1:]...)
+					break
+				}
+			}
+			log.Infof("Client %v deleted from stream %v", client, in.Id)
 		}
 	}
 	return &pb.StreamResult{}, nil
@@ -134,14 +120,13 @@ func forwardRTPPackets(port uint16) {
 			continue
 		}
 
-		for _, stream := range streams {
-			if sourceAddr.IP.Equal(stream.server.Addr.IP) {
-				for _, client := range stream.clients {
-					if _, err := sourceConn.WriteToUDP(buffer[0:n], client.Addr); err != nil {
-						log.WithError(err).Warn("Could not forward packet.")
-					} else {
-						log.Trace("sent to ", client.Addr)
-					}
+		clients, ok := flows[sourceAddr]
+		if ok {
+			for _, client := range clients {
+				if _, err := sourceConn.WriteToUDP(buffer[0:n], &client); err != nil {
+					log.WithError(err).Warn("Could not forward packet.")
+				} else {
+					log.Trace("sent to ", client)
 				}
 			}
 		}
