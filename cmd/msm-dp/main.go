@@ -25,9 +25,9 @@ type Stream struct {
 	clients []Endpoint
 }
 
-var streams map[uint32]Stream
+var streams = make(map[uint32]Stream)
 
-var flows map[*net.UDPAddr][]net.UDPAddr
+var flows = make(map[*net.UDPAddr][]net.UDPAddr)
 
 // server is used to implement msm_dp.server
 type server struct {
@@ -48,6 +48,16 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		if !exists {
 			streams[in.Id] = Stream{server: &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}, clients: []Endpoint{}}
 			log.Infof("New stream ID: %v, source %v:%v", in.Id, in.Endpoint.Ip, in.Endpoint.Port)
+			//flows[streams[in.Id].server] = []net.UDPAddr{*streams[in.Id].server}
+
+			flow, ok := flows[streams[in.Id].server]
+			if ok {
+				flow = append(flow, *streams[in.Id].server)
+			} else {
+				log.Infof("no data-plane flow found for stream %v", in.Id)
+			}
+			log.Debugf("flows: %v", flows)
+			log.Debugf("streams: %v", streams)
 		} else {
 			log.Errorf("Stream with ID %d already exists", in.Id)
 		}
@@ -55,6 +65,7 @@ func (s *server) StreamAddDel(_ context.Context, in *pb.StreamData) (*pb.StreamR
 		log.Errorf("unexpected UPDATE")
 	case "DELETE":
 		delete(streams, in.Id)
+		delete(flows, streams[in.Id].server)
 		log.Infof("Deleted stream ID: %v", in.Id)
 	default:
 		client := &net.UDPAddr{IP: net.ParseIP(in.Endpoint.Ip), Port: int(in.Endpoint.Port), Zone: ""}
@@ -119,7 +130,8 @@ func forwardRTPPackets(port uint16) {
 			log.WithError(err).Warn("Error while reading RTP packet.")
 			continue
 		}
-
+		log.Debugf("Forwarding packet from %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
+		log.Debugf("flows: %v", flows)
 		clients, ok := flows[sourceAddr]
 		if ok {
 			for _, client := range clients {
@@ -129,6 +141,8 @@ func forwardRTPPackets(port uint16) {
 					log.Trace("sent to ", client)
 				}
 			}
+		} else {
+			log.Debugf("unable to find source address %v:%d", sourceAddr.IP.String(), sourceAddr.Port)
 		}
 	}
 }
