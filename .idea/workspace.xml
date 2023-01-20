@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="added clients to the flow">
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="only 1 stream at a time working">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
     </list>
@@ -24,7 +24,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="multi_stream_2" />
+        <entry key="$PROJECT_DIR$" value="multi_stream_3" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -179,7 +179,8 @@
     <MESSAGE value="Fix for Del_Ep" />
     <MESSAGE value="added server to the flow" />
     <MESSAGE value="added clients to the flow" />
-    <option name="LAST_COMMIT_MESSAGE" value="added clients to the flow" />
+    <MESSAGE value="only 1 stream at a time working" />
+    <option name="LAST_COMMIT_MESSAGE" value="only 1 stream at a time working" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
