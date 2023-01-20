@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"google.golang.org/grpc"
 	"net"
+
+	"google.golang.org/grpc"
 
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 	log "github.com/sirupsen/logrus"
@@ -111,7 +112,7 @@ func forwardRTPPackets(port uint16) {
 
 		streamID, ok := streamMap[fmt.Sprintf("%s:%d", sourceAddr.IP.String(), sourceAddr.Port)]
 		if !ok {
-			log.Errorf("stream for server %s:%d not found", sourceAddr.IP.String(), sourceAddr.Port)
+			log.Tracef("RTP stream for server %s:%d not found", sourceAddr.IP.String(), sourceAddr.Port)
 			continue
 		}
 		stream, ok := streams[streamID]
@@ -121,16 +122,16 @@ func forwardRTPPackets(port uint16) {
 		}
 
 		if !sourceAddr.IP.Equal(stream.server.IP) || sourceAddr.Port != stream.server.Port {
-			log.Errorf("Packet received from unknown server %v, expected %v", sourceAddr, stream.server)
+			log.Errorf("RTP packet received from unknown server %v, expected %v", sourceAddr, stream.server)
 			continue
 		}
 
 		for _, endpoint := range stream.clients {
 			if endpoint.enabled {
 				if _, err := sourceConn.WriteToUDP(buffer[0:n], &endpoint.address); err != nil {
-					log.WithError(err).Warn("Could not forward packet.")
+					log.WithError(err).Warn("Could not forward RTP packet.")
 				} else {
-					log.Tracef("sent to %v", endpoint.address)
+					log.Tracef("RTP packet sent to %v", endpoint.address)
 				}
 			}
 		}
@@ -140,7 +141,7 @@ func forwardRTCPPackets(port uint16) {
 	sourceAddr := &net.UDPAddr{IP: net.ParseIP("0.0.0.0"), Port: int(port), Zone: ""}
 	sourceConn, err := net.ListenUDP("udp", sourceAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Could not start listening on RTP port.")
+		log.WithError(err).Fatal("Could not start listening on RTCP port.")
 	}
 	defer func(sourceConn *net.UDPConn) {
 		err := sourceConn.Close()
@@ -152,13 +153,13 @@ func forwardRTCPPackets(port uint16) {
 	for {
 		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
 		if err != nil {
-			log.WithError(err).Warn("Error while reading RTP packet.")
+			log.WithError(err).Warn("Error while reading RTCP packet.")
 			continue
 		}
 
-		streamID, ok := streamMap[fmt.Sprintf("%s:%d", sourceAddr.IP.String(), sourceAddr.Port)]
+		streamID, ok := streamMap[fmt.Sprintf("%s:%d", sourceAddr.IP.String(), sourceAddr.Port-1)]
 		if !ok {
-			log.Errorf("stream for server %s:%d not found", sourceAddr.IP.String(), sourceAddr.Port)
+			log.Tracef("RTCP stream for server %s:%d not found", sourceAddr.IP.String(), sourceAddr.Port)
 			continue
 		}
 		stream, ok := streams[streamID]
@@ -167,17 +168,17 @@ func forwardRTCPPackets(port uint16) {
 			continue
 		}
 
-		if !sourceAddr.IP.Equal(stream.server.IP) || sourceAddr.Port != stream.server.Port {
-			log.Errorf("Packet received from unknown server %v, expected %v", sourceAddr, stream.server)
+		if !sourceAddr.IP.Equal(stream.server.IP) || sourceAddr.Port != stream.server.Port+1 {
+			log.Errorf("RTCP packet received from unknown server %v, expected %v", sourceAddr, stream.server)
 			continue
 		}
 
 		for _, endpoint := range stream.clients {
 			if endpoint.enabled {
 				if _, err := sourceConn.WriteToUDP(buffer[0:n], &endpoint.address); err != nil {
-					log.WithError(err).Warn("Could not forward packet.")
+					log.WithError(err).Warn("Could not forward RTCP packet.")
 				} else {
-					log.Tracef("sent to %v", endpoint.address)
+					log.Tracef("RTP packet sent to %v", endpoint.address)
 				}
 			}
 		}
