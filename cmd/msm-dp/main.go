@@ -175,7 +175,8 @@ func forwardRTCPPackets(port uint16) {
 
 		for _, endpoint := range stream.clients {
 			if endpoint.enabled {
-				if _, err := sourceConn.WriteToUDP(buffer[0:n], &endpoint.address); err != nil {
+				RTCPAddress := net.UDPAddr{IP: endpoint.address.IP, Port: endpoint.address.Port + 1, Zone: endpoint.address.Zone}
+				if _, err := sourceConn.WriteToUDP(buffer[0:n], &RTCPAddress); err != nil {
 					log.WithError(err).Warn("Could not forward RTCP packet.")
 				} else {
 					log.Tracef("RTP packet sent to %v", endpoint.address)
