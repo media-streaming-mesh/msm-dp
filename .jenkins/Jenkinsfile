@@ -1,0 +1,43 @@
+@Library(['srePipeline']) _ 
+
+def params = [:]
+def regCreds = [
+    usernamePassword(
+        credentialsId: "botuser_dockerhub_cisco_com",
+        passwordVariable: 'DOCKERHUB_CISCO_PASS',
+        usernameVariable: 'DOCKERHUB_CISCO_USER'),
+    usernamePassword(
+        credentialsId: "docker-hub-eti-sre",
+        passwordVariable: 'DOCKERHUB_PASS',
+        usernameVariable: 'DOCKERHUB_USER')];
+
+pipeline {
+    agent { label 'eti-jenkins-common-xlarge-3' }
+
+    stages {
+        stage('git clone') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('BUILD & PUBLISH') {
+            steps {
+                script {
+                    params = [VAULT_ADDR: 'https://keeper.cisco.com']
+
+                    withCredentials(regCreds) {
+                        withEnv(["PUBLIC_CONTAINER_REGISTRY=public.ecr.aws/ciscoeti"]) {
+                            sreAWS.awsLogin(params) {
+                                sh '''
+                                aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/ciscoeti
+                                docker login --username ${DOCKERHUB_USER} --password ${DOCKERHUB_PASS}
+                                ${WORKSPACE}/.jenkins/build-docker.sh
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
