@@ -27,8 +27,10 @@ type Stream struct {
 	clients map[string]Endpoint
 }
 
-var streams = make(map[uint32]Stream)
-var streamMap = make(map[string]uint32)
+var (
+	streams   = make(map[uint32]Stream)
+	streamMap = make(map[string]uint32)
+)
 
 // server is used to implement msm_dp.server
 type server struct {
@@ -137,6 +139,7 @@ func forwardRTPPackets(port uint16) {
 		}
 	}
 }
+
 func forwardRTCPPackets(port uint16) {
 	sourceAddr := &net.UDPAddr{IP: net.ParseIP("0.0.0.0"), Port: int(port), Zone: ""}
 	sourceConn, err := net.ListenUDP("udp", sourceAddr)
