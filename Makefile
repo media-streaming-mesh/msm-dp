@@ -3,6 +3,8 @@
 
 BASE_IMAGE = amd64/golang:1.14-alpine3.11
 
+PATH := $(PWD)/bin:$(PATH)
+
 help:
 	@echo "usage: make [action]"
 	@echo ""
@@ -140,3 +142,13 @@ travis-setup:
 	temp \
 	sh -c "cd /s \
 	&& travis setup releases --force"
+
+# Generate code
+# Requires protoc be installed
+generate: download-deps
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative api/v1alpha1/msm_dp/*.proto	
+
+# Download build dependencies
+download-deps:
+	./scripts/download-deps.sh
+
