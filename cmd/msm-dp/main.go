@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 
+	"google.golang.org/grpc/health/grpc_health_v1"
+
 	"google.golang.org/grpc"
 
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
@@ -206,6 +208,9 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterMsmDataPlaneServer(s, &server{})
+
+	healthService := NewHealthChecker()
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go forwardRTPPackets(uint16(*rtpPort))
 	go forwardRTCPPackets(uint16(*rtpPort + 1))
