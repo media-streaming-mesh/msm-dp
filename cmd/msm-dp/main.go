@@ -218,7 +218,7 @@ func main() {
 	go forwardRTPPackets(uint16(*rtpPort))
 	go forwardRTCPPackets(uint16(*rtpPort + 1))
 
-	util.Infof("Listening for messages coming from CP at %d", *port)
+	util.Infof("Listening for messages coming from CP at %v", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
 		util.Fatalf("failed to serve: %v", err)
