@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
-	log "github.com/sirupsen/logrus"
+	log "github.com/media-streaming-mesh/msm-dp/util"
 )
 
 var (
@@ -94,19 +94,19 @@ func forwardRTPPackets(port uint16) {
 	sourceAddr := &net.UDPAddr{IP: net.ParseIP("0.0.0.0"), Port: int(port), Zone: ""}
 	sourceConn, err := net.ListenUDP("udp", sourceAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Could not start listening on RTP port.")
+		log.Fatalf("Could not start listening on RTP port.", err)
 	}
 	defer func(sourceConn *net.UDPConn) {
 		err := sourceConn.Close()
 		if err != nil {
-			log.WithError(err).Warn("Unable to close sourceConn")
+			log.Warningf("Unable to close sourceConn", err)
 		}
 	}(sourceConn)
 	buffer := make([]byte, 65507)
 	for {
 		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
 		if err != nil {
-			log.WithError(err).Warn("Error while reading RTP packet.")
+			log.Warningf("Error while reading RTP packet.", err)
 			continue
 		}
 
@@ -129,7 +129,7 @@ func forwardRTPPackets(port uint16) {
 		for _, endpoint := range stream.clients {
 			if endpoint.enabled {
 				if _, err := sourceConn.WriteToUDP(buffer[0:n], &endpoint.address); err != nil {
-					log.WithError(err).Warn("Could not forward RTP packet.")
+					log.Warningf("Could not forward RTP packet.", err)
 				} else {
 					log.Tracef("RTP packet sent to %v", endpoint.address)
 				}
@@ -141,19 +141,19 @@ func forwardRTCPPackets(port uint16) {
 	sourceAddr := &net.UDPAddr{IP: net.ParseIP("0.0.0.0"), Port: int(port), Zone: ""}
 	sourceConn, err := net.ListenUDP("udp", sourceAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Could not start listening on RTCP port.")
+		log.Fatalf("Could not start listening on RTCP port.", err)
 	}
 	defer func(sourceConn *net.UDPConn) {
 		err := sourceConn.Close()
 		if err != nil {
-			log.WithError(err).Warn("Unable to close sourceConn")
+			log.Warningf("Unable to close sourceConn", err)
 		}
 	}(sourceConn)
 	buffer := make([]byte, 65507)
 	for {
 		n, sourceAddr, err := sourceConn.ReadFromUDP(buffer)
 		if err != nil {
-			log.WithError(err).Warn("Error while reading RTCP packet.")
+			log.Warningf("Error while reading RTCP packet.", err)
 			continue
 		}
 
@@ -177,7 +177,7 @@ func forwardRTCPPackets(port uint16) {
 			if endpoint.enabled {
 				RTCPAddress := net.UDPAddr{IP: endpoint.address.IP, Port: endpoint.address.Port + 1, Zone: endpoint.address.Zone}
 				if _, err := sourceConn.WriteToUDP(buffer[0:n], &RTCPAddress); err != nil {
-					log.WithError(err).Warn("Could not forward RTCP packet.")
+					log.Warningf("Could not forward RTCP packet.", err)
 				} else {
 					log.Tracef("RTP packet sent to %v", endpoint.address)
 				}
@@ -187,13 +187,16 @@ func forwardRTCPPackets(port uint16) {
 }
 
 func main() {
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:     true,
-		DisableColors:   false,
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-	log.SetLevel(log.DebugLevel)
+
+	logLevel := log.GetLogLevelFromEnv()
+	logType := log.GetLogTypeFromEnv()
+
+	config := log.LoggerConfig{
+		LogLevel: logLevel,
+		LogType:  logType,
+	}
+	log.InitLogger(config)
+
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
@@ -207,7 +210,7 @@ func main() {
 	go forwardRTPPackets(uint16(*rtpPort))
 	go forwardRTCPPackets(uint16(*rtpPort + 1))
 
-	log.Info("Listening for CP messages at ", lis.Addr())
+	log.Infof("Listening for CP messages at ", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
