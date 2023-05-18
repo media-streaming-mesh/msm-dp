@@ -211,7 +211,7 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterMsmDataPlaneServer(s, &server{})
 
-	healthService := NewHealthChecker()
+	healthService := log.NewHealthChecker()
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go forwardRTPPackets(uint16(*rtpPort))
