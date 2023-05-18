@@ -4,14 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="only 1 stream at a time working">
-      <change afterPath="$PROJECT_DIR$/cmd/msm-dp/health.go" afterDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="refactor">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.proto" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp_grpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp_grpc.pb.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/health.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/util/health.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/msm-logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/util/msm-logger.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,21 +22,30 @@
       </list>
     </option>
   </component>
-  <component name="GOROOT" url="file:///usr/local/go" />
+  <component name="GOROOT" url="file://$USER_HOME$/go/go1.20.4" />
+  <component name="Git.Rebase.Settings">
+    <option name="NEW_BASE" value="main" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="multi_stream_3" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GithubProjectSettings">
-    <option name="branchProtectionPatterns">
-      <list>
-        <option value="main" />
-      </list>
-    </option>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.proto" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/cmd/msm-dp/main.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/deployments/msm/msm-proxy-svc.yaml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/deployments/msm/msm-proxy.yaml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/go/go1.19.1/src/builtin/builtin.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$USER_HOME$/go/go1.19.1/src/net/ip.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$USER_HOME$/go/go1.19.1/src/net/netip/netip.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$USER_HOME$/go/go1.19.1/src/net/udpsock.go" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="KubernetesApiPersistence">
+    <option name="context" value="msm" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="kzvuxcfb" />
@@ -53,35 +59,37 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "Git.Branch.Popup.ShowAllRemotes": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.format.on.save.advertiser.fired": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/home/ubuntu/go/src/media-streaming-mesh/msm-dp",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "go.sdk"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;Git.Branch.Popup.ShowAllRemotes&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.format.on.save.advertiser.fired&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/ammaali/GolandProjects/msm-dp&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;go.sdk&quot;,
+    &quot;vcs.patch.path&quot;: &quot;/Users/ammaali/Desktop&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/rtp" />
       <recent name="$PROJECT_DIR$/cmd" />
+      <recent name="$PROJECT_DIR$/util" />
+      <recent name="$PROJECT_DIR$/rtp" />
       <recent name="$PROJECT_DIR$/cmd/client" />
     </key>
   </component>
@@ -149,15 +157,46 @@
         <option value="Default.Author" />
         <option value="Default.Date" />
         <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
       </list>
     </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="df7ec545-6880-40d1-92ba-7e480887cb6c" value="TOOL_WINDOW" />
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
             <State />
+          </value>
+        </entry>
+        <entry key="df7ec545-6880-40d1-92ba-7e480887cb6c">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="structure">
+                    <value>
+                      <list>
+                        <option value="dir:/Users/ammaali/GolandProjects/msm-dp/cmd/msm-dp" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
+            </State>
           </value>
         </entry>
       </map>
@@ -179,13 +218,13 @@
     <MESSAGE value="Client updated" />
     <MESSAGE value="removed stream id from client" />
     <MESSAGE value="added the ci.yaml file for CI/CD github actions" />
-    <MESSAGE value="Refactor: Adding Clients on ADD_EP and Updating the Enable State on UDP_EP.&#10;Deleting single client on DEL_EP and All clients on DELETE." />
-    <MESSAGE value="Fixed the missing address warning while streaming video" />
-    <MESSAGE value="Fix for Del_Ep" />
-    <MESSAGE value="added server to the flow" />
-    <MESSAGE value="added clients to the flow" />
-    <MESSAGE value="only 1 stream at a time working" />
-    <option name="LAST_COMMIT_MESSAGE" value="only 1 stream at a time working" />
+    <MESSAGE value="log patch" />
+    <MESSAGE value="Updates:&#10;1 - Removed logrus and only using GoLang internal Logs.&#10;2 - Made logging configurable based on Log_level (0: Trace, 1: Debug, 2: Info, 3: Warning, 4: Error, 5: Fatal) and Log_Type (&quot;json&quot; or &quot;text&quot;)" />
+    <MESSAGE value="updated the Go version&#10;updated the logs in health.go" />
+    <MESSAGE value="added go.sum" />
+    <MESSAGE value="lint error fix" />
+    <MESSAGE value="refactor" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
