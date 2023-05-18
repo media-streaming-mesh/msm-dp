@@ -192,7 +192,6 @@ func forwardRTCPPackets(port uint16) {
 }
 
 func main() {
-
 	logLevel := log.GetLogLevelFromEnv()
 	logType := log.GetLogTypeFromEnv()
 

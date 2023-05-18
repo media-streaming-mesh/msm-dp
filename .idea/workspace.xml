@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="Updates:&#10;1 - Removed logrus and only using GoLang internal Logs.&#10;2 - Made logging configurable based on Log_level (0: Trace, 1: Debug, 2: Info, 3: Warning, 4: Error, 5: Fatal) and Log_Type (&quot;json&quot; or &quot;text&quot;)">
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="updated the Go version&#10;updated the logs in health.go">
+      <change afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -186,7 +185,8 @@
     <MESSAGE value="added the ci.yaml file for CI/CD github actions" />
     <MESSAGE value="log patch" />
     <MESSAGE value="Updates:&#10;1 - Removed logrus and only using GoLang internal Logs.&#10;2 - Made logging configurable based on Log_level (0: Trace, 1: Debug, 2: Info, 3: Warning, 4: Error, 5: Fatal) and Log_Type (&quot;json&quot; or &quot;text&quot;)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updates:&#10;1 - Removed logrus and only using GoLang internal Logs.&#10;2 - Made logging configurable based on Log_level (0: Trace, 1: Debug, 2: Info, 3: Warning, 4: Error, 5: Fatal) and Log_Type (&quot;json&quot; or &quot;text&quot;)" />
+    <MESSAGE value="updated the Go version&#10;updated the logs in health.go" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated the Go version&#10;updated the logs in health.go" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
