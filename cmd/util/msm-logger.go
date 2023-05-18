@@ -113,7 +113,7 @@ func GetLogLevelFromEnv() LogLevel {
 	case "5":
 		return Fatal
 	default:
-		return Info // Default log level
+		return Debug // Default log level
 	}
 }
 
@@ -125,7 +125,7 @@ func (w *jsonLogWriter) Write(p []byte) (n int, err error) {
 	// TO DO: Customize the JSON log format according to our(msm) needs
 	// This is a simple example where each log message is an object with a "message" field
 	logEntry := map[string]string{
-		"message": string(p),
+		"message": "LOG_LEVEL = " + string(p),
 	}
 	jsonBytes, _ := json.Marshal(logEntry)
 	return os.Stdout.Write(jsonBytes)
