@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/media-streaming-mesh/msm-dp/cmd/util"
 	"net"
+
+	"github.com/media-streaming-mesh/msm-dp/cmd/util"
 
 	"google.golang.org/grpc/health/grpc_health_v1"
 
