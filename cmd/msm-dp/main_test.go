@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	pb "github.com/media-streaming-mesh/msm-dp/api/v1alpha1/msm_dp"
 )
 
 type testServer struct {

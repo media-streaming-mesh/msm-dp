@@ -7,6 +7,10 @@
     <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="">
       <change afterPath="$PROJECT_DIR$/util/msm-logger.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.proto" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp_grpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/v1alpha1/msm_dp/msm_dp_grpc.pb.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
@@ -23,7 +27,7 @@
       </list>
     </option>
   </component>
-  <component name="GOROOT" url="file://$USER_HOME$/go/go1.19.1" />
+  <component name="GOROOT" url="file:///usr/local/go" />
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>

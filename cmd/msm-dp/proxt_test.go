@@ -7,9 +7,8 @@ import (
 	"testing"
 )
 
-//Note: Not starting the server in the goroutine,
-//as the test case is likely to be finished before the listener has run the/its test.
-
+// Note: Not starting the server in the goroutine,
+// as the test case is likely to be finished before the listener has run the/its test.
 func TestConn(t *testing.T) {
 	message := "Hi there!\n"
 
