@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="lint error fix">
-      <change beforePath="$PROJECT_DIR$/cmd/msm-dp/health.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/health.go" afterDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="refactor">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/health.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/util/health.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/msm-logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/util/msm-logger.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,8 +87,9 @@
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/rtp" />
       <recent name="$PROJECT_DIR$/cmd" />
+      <recent name="$PROJECT_DIR$/util" />
+      <recent name="$PROJECT_DIR$/rtp" />
       <recent name="$PROJECT_DIR$/cmd/client" />
     </key>
   </component>
@@ -154,6 +157,7 @@
         <option value="Default.Author" />
         <option value="Default.Date" />
         <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
       </list>
     </option>
   </component>
@@ -219,7 +223,8 @@
     <MESSAGE value="updated the Go version&#10;updated the logs in health.go" />
     <MESSAGE value="added go.sum" />
     <MESSAGE value="lint error fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="lint error fix" />
+    <MESSAGE value="refactor" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
