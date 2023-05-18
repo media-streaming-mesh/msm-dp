@@ -23,7 +23,7 @@ ARG TARGETOS TARGETARCH
 # Build
 RUN --mount=type=cache,target=/root/.cache/go-build \
         --mount=type=cache,target=/go/pkg \
-        GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -o msm-proxy cmd/msm-dp/*
+        GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -o msm-proxy cmd/msm-dp/main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
