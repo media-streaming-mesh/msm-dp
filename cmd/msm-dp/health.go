@@ -1,8 +1,8 @@
-package util
+package main
 
 import (
 	"context"
-
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -19,20 +19,20 @@ func NewHealthChecker() *HealthChecker {
 }
 
 func (h *HealthChecker) Check(context.Context, *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
-	Infof("Serving the Check request for health check")
+	log.Infof("Serving the Check request for health check")
 
 	if isEverythingReady == true {
-		Debugf("✅ Server's status is %s", grpc_health_v1.HealthCheckResponse_SERVING)
+		log.Debugf("✅ Server's status is %s", grpc_health_v1.HealthCheckResponse_SERVING)
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil
 	} else if isEverythingReady == false {
-		Debugf("🚫 Server's status is %s", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		log.Debugf("🚫 Server's status is %s", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
 		}, nil
 	} else {
-		Debugf("🚫 Server's status is %s", grpc_health_v1.HealthCheckResponse_UNKNOWN)
+		log.Debugf("🚫 Server's status is %s", grpc_health_v1.HealthCheckResponse_UNKNOWN)
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_UNKNOWN,
 		}, nil
