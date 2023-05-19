@@ -215,7 +215,7 @@ func main() {
 	go forwardRTPPackets(uint16(*rtpPort))
 	go forwardRTCPPackets(uint16(*rtpPort + 1))
 
-	log.Info("Listening for CP messages at ", lis.Addr())
+	log.Info("Listening for ControlPlane messages at ", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
