@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	"net"
 	"os"
 	"strings"
+
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"google.golang.org/grpc"
 
