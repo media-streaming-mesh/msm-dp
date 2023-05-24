@@ -4,9 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
-
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"net"
+	"os"
+	"strings"
 
 	"google.golang.org/grpc"
 
@@ -192,13 +193,39 @@ func forwardRTCPPackets(port uint16) {
 }
 
 func main() {
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:     true,
-		DisableColors:   false,
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-	log.SetLevel(log.DebugLevel)
+	log.SetOutput(os.Stdout)
+	logFormat := os.Getenv("LOG_TYPE")
+	switch strings.ToLower(logFormat) {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			PrettyPrint:     true,
+		})
+	default:
+		log.SetFormatter(&log.TextFormatter{
+			ForceColors:     true,
+			DisableColors:   false,
+			FullTimestamp:   true,
+			TimestampFormat: "01-02-2006 15:04:05",
+		})
+	}
+
+	logLevel := os.Getenv("LOG_LEVEL")
+	switch strings.ToLower(logLevel) {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	default:
+		log.SetLevel(log.DebugLevel)
+	}
+
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
