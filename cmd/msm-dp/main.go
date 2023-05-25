@@ -247,6 +247,7 @@ func main() {
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("failed to serve: %v", err)
 	}
 
 	defer func(lis net.Listener) {

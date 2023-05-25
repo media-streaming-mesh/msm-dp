@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="testing the logging changes">
-      <change beforePath="$PROJECT_DIR$/cmd/msm-dp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/msm-dp/main.go" afterDir="false" />
+    <list default="true" id="521c6560-8b77-476f-94b8-e9c3523a0481" name="Changes" comment="lint error fix">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,6 +68,7 @@
     &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;logging__update&quot;,
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/ammaali/GolandProjects/msm-dp&quot;,
@@ -219,10 +220,11 @@
     <MESSAGE value="Updates:&#10;1 - Removed logrus and only using GoLang internal Logs.&#10;2 - Made logging configurable based on Log_level (0: Trace, 1: Debug, 2: Info, 3: Warning, 4: Error, 5: Fatal) and Log_Type (&quot;json&quot; or &quot;text&quot;)" />
     <MESSAGE value="updated the Go version&#10;updated the logs in health.go" />
     <MESSAGE value="added go.sum" />
-    <MESSAGE value="lint error fix" />
     <MESSAGE value="refactor" />
     <MESSAGE value="testing the logging changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="testing the logging changes" />
+    <MESSAGE value="Update: Logging format can now be set via env (json or text)" />
+    <MESSAGE value="lint error fix" />
+    <option name="LAST_COMMIT_MESSAGE" value="lint error fix" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
