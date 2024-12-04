@@ -1,7 +1,8 @@
 module github.com/media-streaming-mesh/msm-dp
 
-go 1.22
-toolchain go1.22.9
+go 1.22.7
+
+toolchain go1.23.1
 
 require (
 	github.com/sirupsen/logrus v1.9.3
