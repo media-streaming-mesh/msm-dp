@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM --platform=$BUILDPLATFORM golang:1.23 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24 AS builder
 
 # Add GRPC healthchecker
 # TODO when Kube 1.27 or higher is a prerequisite this binary can be removed.
